@@ -12,7 +12,7 @@ start_daemon_services:
 	cd ../../ && \
 	SNAPSHOT=SNAPSHOT_MIX_EXIT_PERIOD_SECONDS_120 make init_test && \
 	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f docker-compose-cabbage.yml up -d
+	docker-compose -f ../../docker-compose.yml -f docker-compose-specs.yml up -d
 
 start_daemon_services_reorg:
 	cd ../../ && \
