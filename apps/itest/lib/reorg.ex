@@ -27,7 +27,7 @@ defmodule Itest.Reorg do
   @rpc_nodes ["http://localhost:9000", "http://localhost:9001"]
 
   def execute_in_reorg(func) do
-    if Application.get_env(:cabbage, :reorg) do
+    if Application.get_env(:specs, :reorg) do
       wait_for_nodes_to_be_in_sync()
 
       {:ok, block_before_reorg} = Client.get_latest_block_number()

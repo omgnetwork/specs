@@ -47,7 +47,7 @@ defmodule Itest.Account do
 
     wait_on_receipt_confirmed(receipt_hash)
 
-    if Application.get_env(:cabbage, :reorg) do
+    if Application.get_env(:specs, :reorg) do
       Reorg.unlock_account(addr, passphrase)
     else
       {:ok, true} = Ethereumex.HttpClient.request("personal_unlockAccount", [addr, passphrase, 0], [])
@@ -87,7 +87,7 @@ defmodule Itest.Account do
   defp hash(message), do: ExthCrypto.Hash.hash(message, ExthCrypto.Hash.kec())
 
   defp create_account_from_secret(secret, passphrase) do
-    if Application.get_env(:cabbage, :reorg) do
+    if Application.get_env(:specs, :reorg) do
       Reorg.create_account_from_secret(secret, passphrase)
     else
       Ethereumex.HttpClient.request("personal_importRawKey", [secret, passphrase], [])
