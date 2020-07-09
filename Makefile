@@ -17,7 +17,7 @@ start_daemon_services:
 start_daemon_services_reorg:
 	cd ../../ && \
 	make init_test_reorg && \
-	cd priv/specs/ && \
+	cd priv/cabbage/ && \
 	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-specs.yml up -d
 
 generate-security_critical_api_specs:
