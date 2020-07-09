@@ -87,7 +87,7 @@ defmodule Itest.Account do
   defp hash(message), do: ExthCrypto.Hash.hash(message, ExthCrypto.Hash.kec())
 
   defp create_account_from_secret(secret, passphrase) do
-    if Application.get_env(:specs, :reorg) do
+    if Application.get_env(:itest, :reorg) do
       Reorg.create_account_from_secret(secret, passphrase)
     else
       Ethereumex.HttpClient.request("personal_importRawKey", [secret, passphrase], [])
