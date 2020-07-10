@@ -47,7 +47,7 @@ defmodule Itest.Account do
 
     wait_on_receipt_confirmed(receipt_hash)
 
-    if Application.get_env(:specs, :reorg) do
+    if Application.get_env(:itest, :reorg) do
       Reorg.unlock_account(addr, passphrase)
     else
       {:ok, true} = Ethereumex.HttpClient.request("personal_unlockAccount", [addr, passphrase, 0], [])
