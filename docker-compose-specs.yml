@@ -1,6 +1,6 @@
 # this is an override to our usual docker-compose.yml which enables cabbage integration tests to run against a
 # test-friendly setup of our services
-version: "2.3"
+version: "3.7"
 services:
   watcher:
     environment:

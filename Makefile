@@ -21,13 +21,13 @@ start_daemon_services_reorg:
 	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-specs.yml up -d
 
 generate-security_critical_api_specs:
-	priv/openapitools/openapi-generator-cli generate -i ../../apps/omg_watcher_rpc/priv/swagger/security_critical_api_specs.yaml -g elixir -o apps/watcher_security_critical_api
+	priv/openapitools/openapi-generator-cli generate -i ./security_critical_api_specs.yml -g elixir -o apps/watcher_security_critical_api
 
 generate-info_api_specs:
-	priv/openapitools/openapi-generator-cli generate -i ../../apps/omg_watcher_rpc/priv/swagger/info_api_specs.yaml -g elixir -o apps/watcher_info_api
+	priv/openapitools/openapi-generator-cli generate -i ./info_api_specs.yml -g elixir -o apps/watcher_info_api
 
 generate-operator_api_specs:
-	priv/openapitools/openapi-generator-cli generate -i ../../apps/omg_child_chain_rpc/priv/swagger/operator_api_specs.yaml -g elixir -o apps/child_chain_api
+	priv/openapitools/openapi-generator-cli generate -i ./operator_api_specs.yml -g elixir -o apps/child_chain_api
 
 generate_api_code: generate-security_critical_api_specs generate-info_api_specs generate-operator_api_specs
 
