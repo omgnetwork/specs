@@ -12,13 +12,13 @@ start_daemon_services:
 	cd ../../ && \
 	SNAPSHOT=SNAPSHOT_MIX_EXIT_PERIOD_SECONDS_120 make init_test && \
 	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f docker-compose-specs.yml up -d
+	docker-compose -f ../../docker-compose.yml -f docker-compose-2-specs.yml up -d
 
 start_daemon_services_reorg:
 	cd ../../ && \
 	make init_test_reorg && \
 	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-specs.yml up -d
+	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-2-specs.yml up -d
 
 generate-security_critical_api_specs:
 	priv/openapitools/openapi-generator-cli generate -i ./security_critical_api_specs.yml -g elixir -o apps/watcher_security_critical_api
