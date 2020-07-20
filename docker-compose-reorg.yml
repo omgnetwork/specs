@@ -58,19 +58,17 @@ services:
       chain:
         ipv4_address: 172.25.0.103
 
-  nginx:
+  nginx_geth:
     depends_on:
-      geth-1:
-        condition: service_healthy
-      geth-2:
-        condition: service_healthy
+      - geth-1
+      - geth-2
     volumes:
       - ./priv/cabbage/nginx.conf:/etc/nginx/nginx.conf
     networks:
       chain:
         ipv4_address: 172.25.0.104
 
-  postgres:
+  postgres_watcher:
     networks:
       chain:
         ipv4_address: 172.25.0.110
