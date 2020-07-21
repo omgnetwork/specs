@@ -32,6 +32,8 @@ start_daemon_services_reorg:
 	cd priv/cabbage/ && \
 	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-specs.yml up -d
 
+stop_daemon_services:
+	docker container stop $(docker container ls -aq)
 
 generate-security_critical_api_specs:
 	priv/openapitools/openapi-generator-cli generate -i ./security_critical_api_specs.yml -g elixir -o apps/watcher_security_critical_api
