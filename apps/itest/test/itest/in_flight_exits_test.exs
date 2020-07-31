@@ -34,7 +34,6 @@ defmodule InFlightExitsTests do
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
   alias WatcherSecurityCriticalAPI.Api.InFlightExit
-  alias WatcherSecurityCriticalAPI.Api.InFlightExit
   alias WatcherSecurityCriticalAPI.Api.Transaction
   alias WatcherSecurityCriticalAPI.Connection, as: Watcher
   alias WatcherSecurityCriticalAPI.Model.InFlightExitInputChallengeDataBodySchema
@@ -938,6 +937,25 @@ defmodule InFlightExitsTests do
                  blknum == output_blknum and txindex == output_txindex and oindex == piggybacked_output_index
                end
              )
+  end
+
+  # ""Alice" is aware of available piggyback"
+  defgiven ~r/"(?<entity>[^"]+)" is aware of available piggyback/, %{entity: _entity}, state do
+    Logger.info("Start awaiting for available piggyback event")
+    assert all_events_in_status?(["piggyback_available"])
+    Logger.info("Event received")
+
+    {:ok, state}
+  end
+
+  # "And Alice in flight transaction inputs are not exitable any more"
+  defthen ~r/"(?<entity>[^"]+)" in flight transaction inputs are not exitable any more/, %{entity: entity}, state do
+    %{address: address, txbytes: txbytes} = state[entity]
+
+    {:ok, %ExPlasma.Transaction{inputs: [input]}} = ExPlasma.Transaction.decode(txbytes)
+    input_pos = ExPlasma.Utxo.pos(input)
+
+    assert Itest.Poller.exitable_utxo_absent?(address, input_pos)
   end
 
   ###############################################################################################
