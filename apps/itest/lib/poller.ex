@@ -415,10 +415,10 @@ defmodule Itest.Poller do
     utxos = Jason.decode!(response.body)["data"]
 
     if Enum.any?(utxos, fn utxo -> utxo["utxo_pos"] == utxo_pos end) do
-      true
-    else
       Process.sleep(@sleep_retry_sec)
       utxo_absent?(address, utxo_pos, counter - 1)
+    else
+      true
     end
   end
 
@@ -438,10 +438,10 @@ defmodule Itest.Poller do
     utxos = Jason.decode!(response.body)["data"]
 
     if Enum.any?(utxos, fn utxo -> utxo["utxo_pos"] == utxo_pos end) do
-      true
-    else
       Process.sleep(@sleep_retry_sec)
       exitable_utxo_absent?(address, utxo_pos, counter - 1)
+    else
+      true
     end
   end
 end

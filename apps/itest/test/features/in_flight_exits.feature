@@ -51,3 +51,14 @@ Feature: In Flight Exits
     Given Alice piggybacks output from her most recent in flight exit
     And "Alice" in flight transaction most recently piggybacked output is not spendable any more
     Then "Alice" can processes its own most recent in flight exit
+
+  Scenario: In-flight exited transaction input is not exitable
+    Given "Alice" deposits "10" ETH to the root chain
+    Then "Alice" should have "10" ETH on the child chain after finality margin
+    Given Alice creates a transaction for "5" ETH
+    And Alice starts an in flight exit from the most recently created transaction
+    Then "Alice" verifies its in flight exit from the most recently created transaction
+    Given "Alice" is aware of available piggyback
+    Then "Alice" in flight transaction inputs are not exitable any more
+    Given Alice piggybacks output from her most recent in flight exit
+    Then "Alice" can processes its own most recent in flight exit
