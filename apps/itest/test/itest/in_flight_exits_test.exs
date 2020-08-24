@@ -1031,7 +1031,7 @@ defmodule InFlightExitsTests do
     # result is in seconds
     result
     |> Encoding.to_binary()
-    |> ABI.TypeDecoder.decode([{:uint, 168}])
+    |> ABI.TypeDecoder.decode([{:uint, 160}])
     |> hd()
     # to milliseconds
     |> Kernel.*(1000)
