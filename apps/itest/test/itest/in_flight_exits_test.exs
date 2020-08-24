@@ -989,7 +989,7 @@ defmodule InFlightExitsTests do
     # the important part is that there is an assertion that those exits got processed
     data =
       ABI.encode(
-        "processExits(uint256,address,uint160,uint256)",
+        "processExits(uint256,address,uint168,uint256)",
         [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether(), 0, 2]
       )
 
@@ -1020,7 +1020,7 @@ defmodule InFlightExitsTests do
 
       result ->
         next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
-        next_exit_id &&& (1 <<< 160) - 1
+        next_exit_id &&& (1 <<< 168) - 1
     end
   end
 
@@ -1031,7 +1031,7 @@ defmodule InFlightExitsTests do
     # result is in seconds
     result
     |> Encoding.to_binary()
-    |> ABI.TypeDecoder.decode([{:uint, 160}])
+    |> ABI.TypeDecoder.decode([{:uint, 168}])
     |> hd()
     # to milliseconds
     |> Kernel.*(1000)
@@ -1196,7 +1196,7 @@ defmodule InFlightExitsTests do
 
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
-    data = ABI.encode("inFlightExits(uint160[])", [[ife_exit_id]])
+    data = ABI.encode("inFlightExits(uint168[])", [[ife_exit_id]])
     {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
 
     return_struct = [

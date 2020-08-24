@@ -25,7 +25,7 @@ data = ABI.encode("minExitPeriod()", [])
 milliseconds =
   result
   |> Encoding.to_binary()
-  |> ABI.TypeDecoder.decode([{:uint, 160}])
+  |> ABI.TypeDecoder.decode([{:uint, 168}])
   |> hd()
   # to milliseconds
   |> Kernel.*(1_000)
