@@ -39,12 +39,7 @@ defmodule StandardExitsTests do
 
     # We need both initial_eth_balance and initial_balance because in ERC-20 case we check both
     initial_eth_balance = Itest.Poller.root_chain_get_balance(alice_account, Currency.ether())
-    IO.inspect(initial_eth_balance)
-    IO.inspect(currency)
-    IO.inspect("***")
     initial_balance = Itest.Poller.root_chain_get_balance(alice_account, currency)
-    IO.inspect(currency)
-    IO.inspect(initial_balance)
 
     {:ok, receipt_hash} =
       amount
