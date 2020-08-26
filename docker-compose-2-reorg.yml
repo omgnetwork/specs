@@ -78,6 +78,7 @@ services:
   childchain:
     environment:
       - ETHEREUM_RPC_URL=http://172.25.0.104:80
+      - FEE_FEED_URL=http://172.25.0.108:4000/api/v1
     networks:
       chain:
         ipv4_address: 172.25.0.105
@@ -98,6 +99,19 @@ services:
     networks:
       chain:
         ipv4_address: 172.25.0.107
+
+  postgres_feefeed:
+    networks:
+      chain:
+        ipv4_address: 172.25.0.111
+
+  feefeed:
+    environment:
+      - ETHEREUM_NODE_URL=http://172.25.0.104:80
+      - DATABASE_URL=postgresql://feefeed:feefeed@172.25.0.111:5432/feefeed
+    networks:
+      chain:
+        ipv4_address: 172.25.0.108
 
 
 networks:
