@@ -26,6 +26,7 @@ defmodule Itest.Poller do
   alias WatcherInfoAPI.Connection, as: WatcherInfo
   alias WatcherInfoAPI.Model.AddressBodySchema1
   alias WatcherSecurityCriticalAPI.Api.Status
+  alias ChildChainAPI.Api.Fees
 
   @sleep_retry_sec 1_000
   @retry_count 240
@@ -51,7 +52,7 @@ defmodule Itest.Poller do
   def submit_typed(typed_data_signed), do: submit_typed(typed_data_signed, @retry_count)
 
   @doc """
-  API:: We pull account balance until we recongnize a change from 0 (which is []) to something
+  API:: We pull account balance
   """
   def get_balance(address, currency \\ Currency.ether()) do
     get_balance(address, Encoding.to_hex(currency), @retry_count)
@@ -173,8 +174,17 @@ defmodule Itest.Poller do
     response =
       case account_get_balances(address) do
         {:ok, response} ->
-          decoded_response = Jason.decode!(response.body)
-          Enum.find(decoded_response["data"], :error, fn data -> data["currency"] == currency end)
+          data = Jason.decode!(response.body)["data"]
+          case data do
+            # When the account does not have the balance, watcher would return empty list
+            [] ->
+              %{
+                "amount" => 0,
+                "currency" => currency
+              }
+            _ ->
+              Enum.find(data, :error, fn data -> data["currency"] == currency end)
+          end
 
         _ ->
           :error
