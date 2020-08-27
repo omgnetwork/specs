@@ -127,8 +127,29 @@ defmodule Itest.Client do
 
   def get_gas_used(receipt_hash), do: Itest.Gas.get_gas_used(receipt_hash)
 
-  def get_balance(address), do: Itest.Poller.get_balance(address)
-  def get_balance(address, currency), do: Itest.Poller.get_balance(address, currency)
+  def get_balance(address, currency \\ Currency.ether()) do
+    currency = Encoding.to_hex(currency)
+
+    {:ok, response} = WatcherInfoAPI.Api.Account.account_get_balance(
+      WatcherInfo.new(),
+      %{
+        address: address
+      }
+    )
+
+    data = Jason.decode!(response.body)["data"]
+    case data do
+      # When the account does not have the balance, watcher would return empty list
+      [] ->
+        %{
+          "amount" => 0,
+          "currency" => currency
+        }
+
+      _ ->
+        Enum.find(data, :error, fn data -> data["currency"] == currency end)
+    end
+  end
 
   def get_exact_balance(address, amount), do: Itest.Poller.pull_balance_until_amount(address, amount)
 
