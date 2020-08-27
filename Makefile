@@ -23,7 +23,6 @@ start_daemon_services:
 start_daemon_services_reorg-2:
 	cd ../../ && \
 	make init_test_reorg && \
-	docker-compose pull && \
 	cd priv/cabbage/ && \
 	docker-compose -f ../../docker-compose.yml -f docker-compose-2-reorg.yml -f docker-compose-2-specs.yml up -d
 
