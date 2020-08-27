@@ -8,7 +8,7 @@ Feature: In Flight Exits
     And Bob gets in flight exit data for "5" ETH from his most recent deposit
     And Alice sends the most recently created transaction
     And Bob spends an output from the most recently sent transaction
-    And Alice starts an in flight exit from the most recently created transaction
+    And "Alice" starts an in flight exit from the most recently created transaction
     Then "Alice" verifies its in flight exit from the most recently created transaction
     Given Bob piggybacks inputs and outputs from Alices most recent in flight exit
     And Bob starts a piggybacked in flight exit using his most recently prepared in flight exit data
@@ -35,7 +35,7 @@ Feature: In Flight Exits
     Given "Alice" deposits "10" ETH to the root chain
     Then "Alice" should have "10" ETH on the child chain after finality margin
     Given Alice creates a transaction for "5" ETH
-    And Alice starts an in flight exit from the most recently created transaction
+    And "Alice" starts an in flight exit from the most recently created transaction
     Then "Alice" verifies its in flight exit from the most recently created transaction
     Given Alice piggybacks output from her most recent in flight exit
     And "Alice" in flight transaction inputs are not spendable any more
@@ -46,7 +46,7 @@ Feature: In Flight Exits
     Then "Alice" should have "10" ETH on the child chain after finality margin
     Given Alice creates a transaction for "5" ETH
     And Alice sends the most recently created transaction
-    And Alice starts an in flight exit from the most recently created transaction
+    And "Alice" starts an in flight exit from the most recently created transaction
     Then "Alice" verifies its in flight exit from the most recently created transaction
     Given Alice piggybacks output from her most recent in flight exit
     And "Alice" in flight transaction most recently piggybacked output is not spendable any more
@@ -56,9 +56,23 @@ Feature: In Flight Exits
     Given "Alice" deposits "10" ETH to the root chain
     Then "Alice" should have "10" ETH on the child chain after finality margin
     Given Alice creates a transaction for "5" ETH
-    And Alice starts an in flight exit from the most recently created transaction
+    And "Alice" starts an in flight exit from the most recently created transaction
     Then "Alice" verifies its in flight exit from the most recently created transaction
     Given "Alice" is aware of available piggyback
     Then "Alice" in flight transaction inputs are not exitable any more
     Given Alice piggybacks output from her most recent in flight exit
     Then "Alice" can processes its own most recent in flight exit
+
+  Scenario: In-flight exit can be deleted even if it is non-canonical
+    Given "Alice" deposits "10" ETH to the root chain
+    Given "Bob" deposits "10" ETH to the root chain
+    Then "Alice" should have "10" ETH on the child chain after finality margin
+    Then "Bob" should have "10" ETH on the child chain after finality margin
+    Given Alice and Bob create a transaction for "5" ETH
+    And Bob gets in flight exit data for "5" ETH from his most recent deposit
+    And Alice sends the most recently created transaction
+    And Bob spends an output from the most recently sent transaction
+    And "Alice" starts an in flight exit from the most recently created transaction
+    And "Bob" starts an in flight exit from the most recently created transaction
+    When "Alice" deletes its most recent in flight exit
+    Then watcher does not report any ife related events
