@@ -124,11 +124,14 @@ defmodule FeeClaimingTests do
 
   defp get_fee_amount() do
     {:ok, response} = Client.get_fees()
-    fee = Enum.find(
-      response[@payment_tx_type],
-      :fee_for_currency_not_found,
-      fn fee_data -> fee_data["currency"] == Encoding.to_hex(@fee_currency) end
-    )
+
+    fee =
+      Enum.find(
+        response[@payment_tx_type],
+        :fee_for_currency_not_found,
+        fn fee_data -> fee_data["currency"] == Encoding.to_hex(@fee_currency) end
+      )
+
     fee["amount"]
   end
 

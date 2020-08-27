@@ -26,7 +26,6 @@ defmodule Itest.Poller do
   alias WatcherInfoAPI.Connection, as: WatcherInfo
   alias WatcherInfoAPI.Model.AddressBodySchema1
   alias WatcherSecurityCriticalAPI.Api.Status
-  alias ChildChainAPI.Api.Fees
 
   @sleep_retry_sec 1_000
   @retry_count 240
@@ -50,7 +49,6 @@ defmodule Itest.Poller do
   API:: If we're trying to transact with UTXOs that were not recognized *yet*
   """
   def submit_typed(typed_data_signed), do: submit_typed(typed_data_signed, @retry_count)
-
 
   @doc """
   API:: We know exactly what amount in WEI we want to recognize so we aggressively pull until...
