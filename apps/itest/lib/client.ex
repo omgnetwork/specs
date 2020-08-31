@@ -194,16 +194,17 @@ defmodule Itest.Client do
     response
   end
 
-  # Watcher would return empty array when the account has no balance at all
-  defp interprete_account_balance_response_data([], currency) do
-    %{
-      "amount" => 0,
-      "currency" => currency
-    }
-  end
-
   defp interprete_account_balance_response_data(data, currency) do
-    Enum.find(data, :balance_of_currency_not_found, fn data -> data["currency"] == currency end)
+    # Watcher would only return list of balances that the owner owns.
+    # As a result, if the balance is not in the list it means the user has 0 balance for the token.
+    case Enum.find(data, :not_found, fn data -> data["currency"] == currency end) do
+      :not_found ->
+        %{
+          "amount" => 0,
+          "currency" => currency
+        }
+      search_result -> search_result
+    end
   end
 
   defp process_transaction_result(
