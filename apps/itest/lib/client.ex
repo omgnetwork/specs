@@ -204,7 +204,9 @@ defmodule Itest.Client do
           "amount" => 0,
           "currency" => currency
         }
-      search_result -> search_result
+
+      search_result ->
+        search_result
     end
   end
 
