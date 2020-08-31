@@ -132,6 +132,7 @@ defmodule Itest.Client do
 
     get_account_balance(address)
     |> Map.fetch!(:body)
+    |> Jason.decode!()
     |> Map.fetch!("data")
     |> interprete_account_balance_response_data(currency)
   end
