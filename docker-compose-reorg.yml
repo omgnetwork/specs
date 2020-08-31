@@ -27,8 +27,8 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      chain:
-        ipv4_address: 172.25.0.102
+      chain_net:
+        ipv4_address: 172.27.0.201
 
   geth-2:
     image: ethereum/client-go:v1.9.15
@@ -55,8 +55,8 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      chain:
-        ipv4_address: 172.25.0.103
+      chain_net:
+        ipv4_address: 172.27.0.202
 
   nginx_geth:
     depends_on:
@@ -64,43 +64,3 @@ services:
       - geth-2
     volumes:
       - ./priv/cabbage/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      chain:
-        ipv4_address: 172.25.0.104
-
-  postgres_watcher:
-    networks:
-      chain:
-        ipv4_address: 172.25.0.110
-
-  childchain:
-    environment:
-      - ETHEREUM_RPC_URL=http://172.25.0.104:80
-    networks:
-      chain:
-        ipv4_address: 172.25.0.105
-
-  watcher:
-    environment:
-      - ETHEREUM_RPC_URL=http://172.25.0.104:80
-      - CHILD_CHAIN_URL=http://172.25.0.105:9656
-    networks:
-      chain:
-        ipv4_address: 172.25.0.106
-
-  watcher_info:
-    environment:
-      - ETHEREUM_RPC_URL=http://172.25.0.104:80
-      - CHILD_CHAIN_URL=http://172.25.0.105:9656
-      - DATABASE_URL=postgresql://omisego_dev:omisego_dev@172.25.0.110:5432/omisego_dev
-    networks:
-      chain:
-        ipv4_address: 172.25.0.107
-
-
-networks:
-  chain:
-    driver: bridge
-    ipam:
-      config:
-      - subnet: 172.25.0.0/24
