@@ -31,7 +31,7 @@ defmodule FeeClaimingTests do
 
     initial_balance =
       @fee_claimer_address
-      |> Client.get_balance(@fee_currency)
+      |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
     %{
@@ -106,7 +106,7 @@ defmodule FeeClaimingTests do
   defthen ~r/^Operator has claimed the fees$/, _, %{fees_initial_balance: initial_balance} do
     actual_balance =
       @fee_claimer_address
-      |> Client.get_balance()
+      |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
     assert_equal(
