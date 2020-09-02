@@ -112,8 +112,7 @@ defmodule DepositsTests do
   defthen ~r/^Bob should have "(?<amount>[^"]+)" ETH on the child chain$/,
           %{amount: amount},
           %{bob_account: bob_account} = state do
-    balance = Client.get_balance(bob_account)["amount"]
-    assert_equal(Currency.to_wei(amount), balance, "For #{bob_account}.")
+    Client.get_exact_balance(bob_account, Currency.to_wei(amount))
 
     {:ok, state}
   end

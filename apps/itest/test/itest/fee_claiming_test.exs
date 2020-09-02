@@ -20,19 +20,19 @@ defmodule FeeClaimingTests do
   alias Itest.Account
   alias Itest.Client
   alias Itest.Transactions.Currency
+  alias Itest.Transactions.Encoding
 
   @fee_claimer_address "0x3b9f4c1dd26e0be593373b1d36cee2008cbeb837"
-  @expected_fee_rule %{"amount" => 1, "currency" => "0x0000000000000000000000000000000000000000"}
+  @fee_currency <<0::160>>
+  @payment_tx_type "1"
 
   setup do
     [{alice_address, alice_pkey}, {bob_address, bob_pkey}] = Account.take_accounts(2)
 
     initial_balance =
       @fee_claimer_address
-      |> Client.get_balance()
+      |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
-
-    assert_equal(@expected_fee_rule["currency"], initial_balance["currency"], "fee expected currency")
 
     %{
       "Alice" => %{
@@ -106,20 +106,33 @@ defmodule FeeClaimingTests do
   defthen ~r/^Operator has claimed the fees$/, _, %{fees_initial_balance: initial_balance} do
     actual_balance =
       @fee_claimer_address
-      |> Client.get_balance()
+      |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
     assert_equal(
-      initial_balance["amount"] + @expected_fee_rule["amount"],
+      initial_balance["amount"] + get_fee_amount(),
       actual_balance["amount"],
       "amount of fees claimed"
     )
 
-    assert_equal(@expected_fee_rule["currency"], actual_balance["currency"], "currency of fees claimed")
+    assert_equal(Encoding.to_hex(@fee_currency), actual_balance["currency"], "currency of fees claimed")
   end
 
   defp assert_equal(left, right, message) do
     assert(left == right, "Expected #{left}, but have #{right}." <> message)
+  end
+
+  defp get_fee_amount() do
+    {:ok, response} = Client.get_fees()
+
+    fee =
+      Enum.find(
+        response[@payment_tx_type],
+        :fee_for_currency_not_found,
+        fn fee_data -> fee_data["currency"] == Encoding.to_hex(@fee_currency) end
+      )
+
+    fee["amount"]
   end
 
   # TODO: Remove when fixed. See issue: omisego/elixir-omg/issues/1293

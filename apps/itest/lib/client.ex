@@ -127,8 +127,16 @@ defmodule Itest.Client do
 
   def get_gas_used(receipt_hash), do: Itest.Gas.get_gas_used(receipt_hash)
 
-  def get_balance(address), do: Itest.Poller.get_balance(address)
-  def get_balance(address, currency), do: Itest.Poller.get_balance(address, currency)
+  def get_balance!(address, currency \\ Currency.ether()) do
+    currency = Encoding.to_hex(currency)
+
+    address
+    |> get_account_balance()
+    |> Map.fetch!(:body)
+    |> Jason.decode!()
+    |> Map.fetch!("data")
+    |> interpret_account_balance_response_data(currency)
+  end
 
   def get_exact_balance(address, amount), do: Itest.Poller.pull_balance_until_amount(address, amount)
 
@@ -172,6 +180,33 @@ defmodule Itest.Client do
       _other ->
         Process.sleep(1_000)
         get_latest_block_number()
+    end
+  end
+
+  defp get_account_balance(address) do
+    {:ok, response} =
+      WatcherInfoAPI.Api.Account.account_get_balance(
+        WatcherInfo.new(),
+        %{
+          address: address
+        }
+      )
+
+    response
+  end
+
+  defp interpret_account_balance_response_data(data, currency) do
+    # Watcher would only return list of balances that the owner owns.
+    # As a result, if the balance is not in the list it means the user has 0 balance for the token.
+    case Enum.find(data, fn data -> data["currency"] == currency end) do
+      nil ->
+        %{
+          "amount" => 0,
+          "currency" => currency
+        }
+
+      search_result ->
+        search_result
     end
   end
 

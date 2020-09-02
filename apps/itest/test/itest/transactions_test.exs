@@ -130,9 +130,12 @@ defmodule TransactionsTests do
     |> Enum.with_index()
     |> Task.async_stream(
       fn {{bob_account, _}, index} ->
-        balance = Client.get_balance(bob_account)["amount"]
+        expecting_amount = Currency.to_wei(amount)
 
-        assert_equal(Currency.to_wei(amount), balance, "For #{bob_account} #{index}.")
+        balance = Client.get_exact_balance(bob_account, expecting_amount)
+        balance = balance["amount"]
+
+        assert_equal(expecting_amount, balance, "For #{bob_account} #{index}.")
       end,
       timeout: 240_000,
       on_timeout: :kill_task,
