@@ -35,7 +35,7 @@ defmodule Itest.Reorg do
       pause_container!(@node1)
       unpause_container!(@node2)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 4)
+      :ok = Client.wait_until_block_number(block_before_reorg + 2)
 
       func.()
 
@@ -48,7 +48,7 @@ defmodule Itest.Reorg do
       pause_container!(@node2)
       unpause_container!(@node1)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 4)
+      :ok = Client.wait_until_block_number(block_before_reorg + 2)
 
       response = func.()
 
@@ -92,6 +92,13 @@ defmodule Itest.Reorg do
   end
 
   defp wait_for_nodes_to_be_in_sync() do
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+      wait_until_peer_count(1)
+
+    {:ok, current_block} = Client.get_latest_block_number()
+
+    :ok = Client.wait_until_block_number(current_block + 5)
+
     wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
       wait_until_peer_count(1)
   end
