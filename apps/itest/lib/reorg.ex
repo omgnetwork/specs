@@ -92,15 +92,13 @@ defmodule Itest.Reorg do
   end
 
   defp wait_for_nodes_to_be_in_sync() do
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
-      wait_until_peer_count(1)
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end)
 
     {:ok, current_block} = Client.get_latest_block_number()
 
     :ok = Client.wait_until_block_number(current_block + 5)
 
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
-      wait_until_peer_count(1)
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end)
   end
 
   defp wait_until_synced(node) do
