@@ -91,14 +91,16 @@ defmodule Itest.Reorg do
     Enum.each(@rpc_nodes, fn node -> do_wait_until_peer_count(node, peer_count) end)
   end
 
-  defp wait_for_nodes_to_be_in_sync(blocks \\ 12) do
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end)
+  defp wait_for_nodes_to_be_in_sync(blocks \\ 10) do
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+      wait_until_latest_block_hash_equal?()
 
     {:ok, current_block} = Client.get_latest_block_number()
 
     :ok = Client.wait_until_block_number(current_block + blocks)
 
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end)
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+      wait_until_latest_block_hash_equal?()
   end
 
   defp wait_until_synced(node) do
@@ -109,6 +111,30 @@ defmodule Itest.Reorg do
       _other ->
         Process.sleep(1_000)
         wait_until_synced(node)
+    end
+  end
+
+  defp wait_until_latest_block_hash_equal?() do
+    [node1, node2] = @rpc_nodes
+
+    node1_block = get_latest_block(node1)
+    node2_block = get_latest_block(node2)
+
+    if node1_block["number"] == node2_block["number"] && node1_block["hash"] == node2_block["hash"] do
+      :ok
+    else
+      wait_until_latest_block_hash_equal?()
+    end
+  end
+
+  defp get_latest_block(node) do
+    case Ethereumex.HttpClient.eth_get_block_by_number("latest", false, url: node) do
+      {:ok, result} ->
+        result
+
+      _other ->
+        Process.sleep(1_000)
+        get_latest_block(node)
     end
   end
 
