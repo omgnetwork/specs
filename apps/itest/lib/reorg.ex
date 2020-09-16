@@ -161,7 +161,7 @@ defmodule Itest.Reorg do
 
       result ->
         if current_time < total_time do
-          Process.sleep(1_000)
+          Process.sleep(2_000)
           with_retries(func, total_time, current_time + 1)
         else
           result
