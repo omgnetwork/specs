@@ -96,7 +96,7 @@ defmodule Itest.Reorg do
 
     {:ok, current_block} = Client.get_latest_block_number()
 
-    :ok = Client.wait_until_block_number(current_block + 5)
+    :ok = Client.wait_until_block_number(current_block + 12)
 
     wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end)
   end
