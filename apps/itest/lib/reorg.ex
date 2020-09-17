@@ -35,7 +35,7 @@ defmodule Itest.Reorg do
       pause_container!(@node1)
       unpause_container!(@node2)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 2)
+      :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
       func.()
 
@@ -48,7 +48,7 @@ defmodule Itest.Reorg do
       pause_container!(@node2)
       unpause_container!(@node1)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 2)
+      :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
       response = func.()
 
