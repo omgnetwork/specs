@@ -29,6 +29,7 @@ defmodule InFlightExitsTests do
   alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
   alias Itest.Client
   alias Itest.Fee
+  alias Itest.InFlightExitClient
   alias Itest.StandardExitChallengeClient
   alias Itest.StandardExitClient
   alias Itest.Transactions.Currency
@@ -450,10 +451,12 @@ defmodule InFlightExitsTests do
     {:ok, Map.put(state, entity, bob_state)}
   end
 
-  defand ~r/^Alice starts an in flight exit from the most recently created transaction$/, _, state do
+  defand ~r/^"(?<entity>[^"]+)" starts an in flight exit from the most recently created transaction$/,
+         %{entity: entity},
+         state do
     exit_game_contract_address = state["exit_game_contract_address"]
     in_flight_exit_bond_size = state["in_flight_exit_bond_size"]
-    %{address: address, txbytes: txbytes} = alice_state = state["Alice"]
+    %{address: address, txbytes: txbytes} = alice_state = state[entity]
     payload = %InFlightExitTxBytesBodySchema{txbytes: Encoding.to_hex(txbytes)}
     response = pull_api_until_successful(InFlightExit, :in_flight_exit_get_data, Watcher.new(), payload)
     exit_data = IfeExitData.to_struct(response)
@@ -464,7 +467,6 @@ defmodule InFlightExitsTests do
       |> Map.put(:exit_data, exit_data)
       |> Map.put(:receipt_hashes, [receipt_hash | alice_state.receipt_hashes])
 
-    entity = "Alice"
     {:ok, Map.put(state, entity, alice_state)}
   end
 
@@ -956,6 +958,25 @@ defmodule InFlightExitsTests do
     input_pos = ExPlasma.Utxo.pos(input)
 
     assert Itest.Poller.exitable_utxo_absent?(address, input_pos)
+  end
+
+  defwhen ~r/^"(?<entity>[^"]+)" deletes its most recent in flight exit$/,
+          %{entity: entity},
+          state do
+    exit_game_contract_address = state["exit_game_contract_address"]
+    %{address: address, exit_data: exit_data} = state[entity]
+
+    in_flight_exit_id = get_in_flight_exit_id(exit_game_contract_address, exit_data)
+
+    _ = wait_for_min_exit_period()
+    InFlightExitClient.delete_in_flight_exit(address, exit_game_contract_address, in_flight_exit_id)
+
+    {:ok, state}
+  end
+
+  defthen ~r/^watcher does not report any byzantine events/, _, state do
+    assert all_events_in_status?([])
+    {:ok, state}
   end
 
   ###############################################################################################
