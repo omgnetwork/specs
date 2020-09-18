@@ -123,9 +123,9 @@ defmodule Itest.Reorg do
 
     node2_block = get_latest_block(node2)
     node2_block_number = node2_block["number"]
-    node1_block_hash = node2_block["number"]
+    node2_block_hash = node2_block["number"]
 
-    case {node1_block_number, node2_block_hash} do
+    case {node1_block_number, node1_block_hash} do
       {^node2_block_number, ^node2_block_hash} -> :ok
       _ -> wait_until_latest_block_hash_equal?()
     end
