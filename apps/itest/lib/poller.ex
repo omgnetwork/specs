@@ -54,7 +54,7 @@ defmodule Itest.Poller do
   API:: We know exactly what amount in WEI we want to recognize so we aggressively pull until...
   """
   def pull_balance_until_amount(address, amount, currency \\ Currency.ether()) do
-    pull_balance_until_amount(address, amount, Encoding.to_hex(currency), @retry_count)
+    pull_balance_until_amount(address, amount, Encoding.to_hex(currency), 600)
   end
 
   @doc """

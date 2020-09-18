@@ -28,7 +28,7 @@ defmodule Itest.Reorg do
 
   def execute_in_reorg(func) do
     if Application.get_env(:itest, :reorg) do
-      wait_for_nodes_to_be_in_sync()
+      wait_for_nodes_to_be_in_sync(2)
 
       {:ok, block_before_reorg} = Client.get_latest_block_number()
 
@@ -52,7 +52,7 @@ defmodule Itest.Reorg do
 
       response = func.()
 
-      :ok = Client.wait_until_block_number(block_on_the_first_node2 + 2)
+      :ok = Client.wait_until_block_number(block_on_the_first_node2 + 4)
 
       unpause_container!(@node2)
       unpause_container!(@node1)
@@ -91,9 +91,16 @@ defmodule Itest.Reorg do
     Enum.each(@rpc_nodes, fn node -> do_wait_until_peer_count(node, peer_count) end)
   end
 
-  defp wait_for_nodes_to_be_in_sync() do
+  defp wait_for_nodes_to_be_in_sync(blocks \\ 10) do
     wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
-      wait_until_peer_count(1)
+      wait_until_latest_block_hash_equal?()
+
+    {:ok, current_block} = Client.get_latest_block_number()
+
+    :ok = Client.wait_until_block_number(current_block + blocks)
+
+    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+      wait_until_latest_block_hash_equal?()
   end
 
   defp wait_until_synced(node) do
@@ -104,6 +111,34 @@ defmodule Itest.Reorg do
       _other ->
         Process.sleep(1_000)
         wait_until_synced(node)
+    end
+  end
+
+  defp wait_until_latest_block_hash_equal?() do
+    [node1, node2] = @rpc_nodes
+
+    node1_block = get_latest_block(node1)
+    node1_block_number = node1_block["number"]
+    node1_block_hash = node1_block["number"]
+
+    node2_block = get_latest_block(node2)
+    node2_block_number = node2_block["number"]
+    node2_block_hash = node2_block["number"]
+
+    case {node1_block_number, node1_block_hash} do
+      {^node2_block_number, ^node2_block_hash} -> :ok
+      _ -> wait_until_latest_block_hash_equal?()
+    end
+  end
+
+  defp get_latest_block(node) do
+    case Ethereumex.HttpClient.eth_get_block_by_number("latest", false, url: node) do
+      {:ok, result} ->
+        result
+
+      _other ->
+        Process.sleep(1_000)
+        get_latest_block(node)
     end
   end
 
@@ -156,7 +191,7 @@ defmodule Itest.Reorg do
 
       result ->
         if current_time < total_time do
-          Process.sleep(1_000)
+          Process.sleep(2_000)
           with_retries(func, total_time, current_time + 1)
         else
           result
