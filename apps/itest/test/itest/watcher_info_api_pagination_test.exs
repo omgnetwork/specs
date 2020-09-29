@@ -91,12 +91,13 @@ defmodule WatcherInfoApiTest do
         bob_addr
       )
 
-    private_keys = Enum.reduce_while(0..3, [], fn index, sigs ->
-      case typed_data["message"]["input#{index}"] do
-        %{"blknum" => 0, "oindex" => 0, "txindex" => 0} -> {:halt, sigs}
-        _ -> {:cont, [alice_priv | sigs]}
-      end
-    end)
+    private_keys =
+      Enum.reduce_while(0..3, [], fn index, sigs ->
+        case typed_data["message"]["input#{index}"] do
+          %{"blknum" => 0, "oindex" => 0, "txindex" => 0} -> {:halt, sigs}
+          _ -> {:cont, [alice_priv | sigs]}
+        end
+      end)
 
     # Alice needs to sign 2 inputs of 1 Eth, 1 for Bob and 1 for the fees
     transaction = Client.submit_transaction_and_wait(typed_data, sign_hash, private_keys)
