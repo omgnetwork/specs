@@ -14,6 +14,7 @@
 
 defmodule TransactionsTests do
   use Cabbage.Feature, async: true, file: "transactions.feature"
+  @moduletag :transactions
 
   require Logger
 
