@@ -20,6 +20,11 @@ defmodule Itest.PlasmaFramework do
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
 
+  @from "0x0000000000000000000000000000000000000001"
+
+  @ether_vault_id 1
+  @erc20_vault_id 2
+
   def address() do
     contracts = parse_contracts()
 
@@ -27,9 +32,6 @@ defmodule Itest.PlasmaFramework do
     |> EIP55.encode()
     |> elem(1)
   end
-
-  @ether_vault_id 1
-  @erc20_vault_id 2
 
   def vault_id(currency) do
     ether = Currency.ether()
@@ -54,7 +56,7 @@ defmodule Itest.PlasmaFramework do
   def exit_game_contract_address(tx_type) do
     data = ABI.encode("exitGames(uint256)", [tx_type])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{from: @from, to: address(), data: Encoding.to_hex(data)})
 
     result
     |> Encoding.to_binary()
@@ -66,7 +68,7 @@ defmodule Itest.PlasmaFramework do
   defp get_vault(id) do
     data = ABI.encode("vaults(uint256)", [id])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{from: @from, to: address(), data: Encoding.to_hex(data)})
 
     result
     |> Encoding.to_binary()

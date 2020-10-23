@@ -18,9 +18,13 @@ alias Itest.Transactions.Currency
 alias Itest.Transactions.Encoding
 import Itest.Poller, only: [wait_on_receipt_confirmed: 1]
 
+from = "0x0000000000000000000000000000000000000001"
+
 Application.ensure_all_started(:ethereumex)
 data = ABI.encode("minExitPeriod()", [])
-{:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+
+{:ok, result} =
+  Ethereumex.HttpClient.eth_call(%{from: from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
 milliseconds =
   result
@@ -74,7 +78,7 @@ has_exit_queue = fn currency ->
     )
 
   {:ok, receipt_enc} =
-    Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    Ethereumex.HttpClient.eth_call(%{from: @from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
   receipt_enc
   |> Encoding.to_binary()
