@@ -50,8 +50,6 @@ defmodule Itest.StandardExitClient do
   @sleep_retry_sec 5_000
   @retry_count 120
 
-  @from "0x0000000000000000000000000000000000000001"
-
   def start_standard_exit(%__MODULE__{utxo: %Utxo{utxo_pos: utxo_pos}} = se) do
     _ = Logger.info("Starting standard exit for UTXO at #{utxo_pos}")
 
@@ -161,9 +159,7 @@ defmodule Itest.StandardExitClient do
   defp get_bond_size_for_standard_exit(se) do
     _ = Logger.info("Trying to get bond size for standard exit.")
     data = ABI.encode("startStandardExitBondSize()", [])
-
-    {:ok, result} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: se.exit_game_contract_address, data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: se.exit_game_contract_address, data: Encoding.to_hex(data)})
 
     standard_exit_bond_size =
       result
@@ -198,9 +194,7 @@ defmodule Itest.StandardExitClient do
   defp wait_for_exit_period(se) do
     _ = Logger.info("Wait for exit period to pass.")
     data = ABI.encode("minExitPeriod()", [])
-
-    {:ok, result} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
     not_from_deposit_multiplier = if se.exit_data && from_deposit?(se.exit_data.utxo_pos), do: 1, else: 2
 
@@ -228,8 +222,7 @@ defmodule Itest.StandardExitClient do
         se.exit_data.utxo_pos
       ])
 
-    {:ok, result} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: se.exit_game_contract_address, data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: se.exit_game_contract_address, data: Encoding.to_hex(data)})
 
     standard_exit_id =
       result
@@ -239,8 +232,7 @@ defmodule Itest.StandardExitClient do
 
     data = ABI.encode("getNextExit(uint256,address)", [Itest.PlasmaFramework.vault_id(se.currency), se.currency])
 
-    {:ok, result} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
     next_exit_id =
       result
@@ -311,7 +303,7 @@ defmodule Itest.StandardExitClient do
       )
 
     {:ok, receipt_enc} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+      Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
     receipt_enc
     |> Encoding.to_binary()

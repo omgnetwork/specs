@@ -30,8 +30,6 @@ defmodule Itest.Poller do
   @sleep_retry_sec 1_000
   @retry_count 240
 
-  @from "0x0000000000000000000000000000000000000001"
-
   def pull_for_utxo_until_recognized_deposit(account, amount, currency, blknum) do
     payload = %AddressBodySchema1{address: account}
     pull_for_utxo_until_recognized_deposit(payload, amount, currency, blknum, @retry_count)
@@ -232,7 +230,7 @@ defmodule Itest.Poller do
   defp do_root_chain_get_erc20_balance(address, currency) do
     data = ABI.encode("balanceOf(address)", [Encoding.to_binary(address)])
 
-    case Ethereumex.HttpClient.eth_call(%{from: @from, to: Encoding.to_hex(currency), data: Encoding.to_hex(data)}) do
+    case Ethereumex.HttpClient.eth_call(%{to: Encoding.to_hex(currency), data: Encoding.to_hex(data)}) do
       {:ok, result} ->
         balance =
           result

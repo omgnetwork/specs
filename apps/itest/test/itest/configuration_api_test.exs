@@ -18,13 +18,11 @@ defmodule ConfigurationRetrievalTests do
   alias Itest.Transactions.Encoding
   require Logger
 
-  @from "0x0000000000000000000000000000000000000001"
-
   setup_all do
     data = ABI.encode("getVersion()", [])
 
     {:ok, response} =
-      Ethereumex.HttpClient.eth_call(%{from: @from, to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+      Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
 
     [{contract_semver}] =
       response
