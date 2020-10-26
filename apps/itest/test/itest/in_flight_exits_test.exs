@@ -1034,7 +1034,12 @@ defmodule InFlightExitsTests do
     data =
       ABI.encode("getNextExit(uint256,address)", [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether()])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: Itest.PlasmaFramework.address(),
+        to: Itest.PlasmaFramework.address(),
+        data: Encoding.to_hex(data)
+      })
 
     case Encoding.to_binary(result) do
       "" ->
@@ -1049,7 +1054,14 @@ defmodule InFlightExitsTests do
   defp wait_for_min_exit_period() do
     _ = Logger.info("Wait for exit period to pass.")
     data = ABI.encode("minExitPeriod()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: Itest.PlasmaFramework.address(),
+        to: Itest.PlasmaFramework.address(),
+        data: Encoding.to_hex(data)
+      })
+
     # result is in seconds
     result
     |> Encoding.to_binary()
@@ -1203,7 +1215,13 @@ defmodule InFlightExitsTests do
     _ = Logger.info("Get in flight exit id...")
     txbytes = Encoding.to_binary(exit_data.in_flight_tx)
     data = ABI.encode("getInFlightExitId(bytes)", [txbytes])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     ife_exit_id =
       result
@@ -1219,7 +1237,13 @@ defmodule InFlightExitsTests do
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
     data = ABI.encode("inFlightExits(uint160[])", [[ife_exit_id]])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     return_struct = [
       {:array,
@@ -1296,7 +1320,13 @@ defmodule InFlightExitsTests do
   defp get_in_flight_exit_bond_size(exit_game_contract_address) do
     _ = Logger.info("Trying to get bond size for in flight exit.")
     data = ABI.encode("startIFEBondSize()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     result
     |> Encoding.to_binary()
@@ -1357,7 +1387,13 @@ defmodule InFlightExitsTests do
   defp get_piggyback_bond_size(exit_game_contract_address) do
     _ = Logger.info("Trying to get bond size for piggback.")
     data = ABI.encode("piggybackBondSize()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     piggyback_bond_size =
       result

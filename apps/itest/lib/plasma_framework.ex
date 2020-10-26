@@ -54,7 +54,7 @@ defmodule Itest.PlasmaFramework do
   def exit_game_contract_address(tx_type) do
     data = ABI.encode("exitGames(uint256)", [tx_type])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{from: address(), to: address(), data: Encoding.to_hex(data)})
 
     result
     |> Encoding.to_binary()
@@ -66,7 +66,7 @@ defmodule Itest.PlasmaFramework do
   defp get_vault(id) do
     data = ABI.encode("vaults(uint256)", [id])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: address(), data: Encoding.to_hex(data)})
+    {:ok, result} = Ethereumex.HttpClient.eth_call(%{from: address(), to: address(), data: Encoding.to_hex(data)})
 
     result
     |> Encoding.to_binary()

@@ -230,7 +230,11 @@ defmodule Itest.Poller do
   defp do_root_chain_get_erc20_balance(address, currency) do
     data = ABI.encode("balanceOf(address)", [Encoding.to_binary(address)])
 
-    case Ethereumex.HttpClient.eth_call(%{to: Encoding.to_hex(currency), data: Encoding.to_hex(data)}) do
+    case Ethereumex.HttpClient.eth_call(%{
+           from: Encoding.to_hex(currency),
+           to: Encoding.to_hex(currency),
+           data: Encoding.to_hex(data)
+         }) do
       {:ok, result} ->
         balance =
           result
