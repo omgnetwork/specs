@@ -20,7 +20,13 @@ import Itest.Poller, only: [wait_on_receipt_confirmed: 1]
 
 Application.ensure_all_started(:ethereumex)
 data = ABI.encode("minExitPeriod()", [])
-{:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+
+{:ok, result} =
+  Ethereumex.HttpClient.eth_call(%{
+    from: Itest.PlasmaFramework.address(),
+    to: Itest.PlasmaFramework.address(),
+    data: Encoding.to_hex(data)
+  })
 
 milliseconds =
   result
