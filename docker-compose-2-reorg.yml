@@ -64,4 +64,4 @@ services:
       geth-2:
         condition: service_healthy
     volumes:
-      - ./priv/cabbage/nginx.conf:/etc/nginx/server_config/geth.conf:ro
+      - ./priv/cabbage/nginx.conf:/etc/nginx/nginx.conf

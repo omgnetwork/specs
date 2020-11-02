@@ -63,4 +63,4 @@ services:
       - geth-1
       - geth-2
     volumes:
-      - ./priv/cabbage/nginx.conf:/etc/nginx/server_config/geth.conf:ro
+      - ./priv/cabbage/geth_nginx.conf:/etc/nginx/server_config/geth.conf:ro
