@@ -65,5 +65,3 @@ services:
         condition: service_healthy
     volumes:
       - ./priv/cabbage/nginx.conf:/etc/nginx/nginx.conf
-
-
