@@ -32,6 +32,12 @@ jobs:
       - checkout
       - install_elixir
       - run:
+          name: Run specs
+          command: |
+            make install
+            make generate_api_code
+            mix deps.get
+      - run:
           name: (Cabbage) Format generated code and check for warnings
           environment:
             MIX_ENV: test
@@ -46,12 +52,6 @@ jobs:
           key: v2-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
           paths:
             - "deps"
-      - run:
-          name: Run specs
-          command: |
-            make install
-            make generate_api_code
-            mix deps.get
       - run:
           name: (Cabbage) Credo and formatting
           command: |
