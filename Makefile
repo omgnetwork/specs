@@ -12,36 +12,6 @@ list:
 test:
 	mix test test/itest
 
-clean:
-	docker-compose down && docker volume prune --force
-
-start_daemon_services-2:
-	cd ../../ && \
-	SNAPSHOT=SNAPSHOT_MIX_EXIT_PERIOD_SECONDS_120 make init_test && \
-	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f ../../docker-compose.feefeed.yml -f docker-compose-2-specs.yml up -d
-
-start_daemon_services:
-	cd ../../ && \
-	SNAPSHOT=SNAPSHOT_MIX_EXIT_PERIOD_SECONDS_120 make init_test && \
-	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f docker-compose-specs.yml up -d
-
-start_daemon_services_reorg-2:
-	cd ../../ && \
-	make init_test_reorg && \
-	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f ../../docker-compose.feefeed.yml -f docker-compose-2-reorg.yml -f docker-compose-2-specs.yml up -d
-
-start_daemon_services_reorg:
-	cd ../../ && \
-	make init_test_reorg && \
-	cd priv/cabbage/ && \
-	docker-compose -f ../../docker-compose.yml -f docker-compose-reorg.yml -f docker-compose-specs.yml up -d
-
-stop_daemon_services:
-	docker container stop $(docker container ls -aq)
-
 generate-security_critical_api_specs:
 	priv/openapitools/openapi-generator-cli generate -i ./security_critical_api_specs.yml -g elixir -o apps/watcher_security_critical_api
 
@@ -70,4 +40,3 @@ install-hex-rebar:
 	mix archive.install ${HEX_URL} --force --sha512 ${HEX_SHA}
 	mix local.rebar rebar ${REBAR_URL} --force --sha512 ${REBAR_SHA}
 	mix local.rebar rebar3 ${REBAR3_URL} --force --sha512 ${REBAR3_SHA}
-

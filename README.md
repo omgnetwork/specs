@@ -8,8 +8,7 @@ TBD - Repo containing specs and integrations tests
 # If there is already some elixir-omg docker running, this can make sure it is cleaned up
 make clean
 
-# Starts the elixir-omg services (childchain, watcher and watcher_info) as background services
-make start_daemon_services
+# Start the elixir-omg services (childchain, watcher and watcher_info) as background services
 
 # Run all the tests
 make test
