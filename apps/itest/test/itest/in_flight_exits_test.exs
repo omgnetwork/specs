@@ -1122,7 +1122,7 @@ defmodule InFlightExitsTests do
       {Encoding.to_binary(ife_input_challenge.in_flight_txbytes), ife_input_challenge.in_flight_input_index,
        Encoding.to_binary(ife_input_challenge.spending_txbytes), ife_input_challenge.spending_input_index,
        Encoding.to_binary(ife_input_challenge.spending_sig), Encoding.to_binary(ife_input_challenge.input_tx),
-       ife_input_challenge.input_utxo_pos, rest_address |> Base.decode16!(case: :lower) |> :keccakf1600.sha3_256()}
+       ife_input_challenge.input_utxo_pos, rest_address |> Base.decode16!(case: :lower) |> ExKeccak.hash_256()}
     ]
 
     data =
@@ -1157,7 +1157,7 @@ defmodule InFlightExitsTests do
        Encoding.to_binary(ife_output_challenge.in_flight_proof), ife_output_challenge.in_flight_output_pos,
        Encoding.to_binary(ife_output_challenge.spending_txbytes), ife_output_challenge.spending_input_index,
        Encoding.to_binary(ife_output_challenge.spending_sig),
-       rest_address |> Base.decode16!(case: :lower) |> :keccakf1600.sha3_256()}
+       rest_address |> Base.decode16!(case: :lower) |> ExKeccak.hash_256()}
     ]
 
     data =

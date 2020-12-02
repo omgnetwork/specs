@@ -69,7 +69,7 @@ defmodule Itest.StandardExitChallengeClient do
        ) do
     _ = Logger.info("Challenging standard exit.")
 
-    sender_data = address |> Encoding.to_binary() |> :keccakf1600.sha3_256()
+    sender_data = address |> Encoding.to_binary() |> ExKeccak.hash_256() |> elem(1)
 
     data =
       ABI.encode("challengeStandardExit((uint160,bytes,bytes,uint16,bytes,bytes32))", [

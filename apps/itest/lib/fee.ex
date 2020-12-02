@@ -18,13 +18,12 @@ defmodule Itest.Fee do
 
   alias Itest.Client
 
-  @payment_tx_type ExPlasma.payment_v1() |> Binary.to_integer() |> Integer.to_string()
-
   @doc """
   get all supported fees for payment transactions
   """
   def get_fees() do
-    {:ok, %{@payment_tx_type => fees}} = Client.get_fees()
+    payment_v1 = ExPlasma.payment_v1()
+    {:ok, %{^payment_v1 => fees}} = Client.get_fees()
     fees
   end
 
