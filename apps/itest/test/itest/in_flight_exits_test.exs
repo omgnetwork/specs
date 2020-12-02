@@ -1034,20 +1034,27 @@ defmodule InFlightExitsTests do
     data =
       ABI.encode("getNextExit(uint256,address)", [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether()])
 
-    {:ok, result} =
+    result =
       Ethereumex.HttpClient.eth_call(%{
         from: Itest.PlasmaFramework.address(),
         to: Itest.PlasmaFramework.address(),
         data: Encoding.to_hex(data)
       })
 
-    case Encoding.to_binary(result) do
-      "" ->
-        :queue_not_added
+    case result do
+      # thats how geth after 1.9.15 reverts this call
+      {:error, %{"code" => 3, "data" => _, "message" => "execution reverted: Queue is empty"}} ->
+        0
 
-      result ->
-        next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
-        next_exit_id &&& (1 <<< 160) - 1
+      {:ok, result} ->
+        case Encoding.to_binary(result) do
+          "" ->
+            :queue_not_added
+
+          result ->
+            next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
+            next_exit_id &&& (1 <<< 160) - 1
+        end
     end
   end
 
