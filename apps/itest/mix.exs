@@ -23,7 +23,7 @@ defmodule Itest.MixProject do
 
   defp deps() do
     [
-      {:ex_plasma, git: "https://github.com/omisego/ex_plasma.git"},
+      {:ex_plasma, git: "https://github.com/omisego/ex_plasma.git", ref: "5e94c4fc82dbf26cb457b30911505ec45ec534ea"},
       {:watcher_info_api, in_umbrella: true},
       {:watcher_security_critical_api, in_umbrella: true},
       {:child_chain_api, in_umbrella: true},
@@ -31,9 +31,9 @@ defmodule Itest.MixProject do
       {:ethereumex, "~> 0.6.0"},
       {:telemetry, "~> 0.4.1"},
       {:websockex, "~> 0.4.2"},
-      {:ex_abi, "~> 0.2.2"},
+      {:ex_abi, "~> 0.5.1"},
       {:ex_rlp, "~> 0.5.3"},
-      {:libsecp256k1, git: "https://github.com/omisego/libsecp256k1.git", branch: "elixir-only", override: true},
+      {:ex_secp256k1, "~> 0.1.2"},
       {:poison, "~> 3.0"},
       {:tesla, "~> 1.3"},
       {:hackney, "~> 1.15.2"},

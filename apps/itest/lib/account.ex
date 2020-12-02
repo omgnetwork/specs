@@ -71,7 +71,7 @@ defmodule Itest.Account do
   end
 
   defp get_public_key(private_key) do
-    case :libsecp256k1.ec_pubkey_create(private_key, :uncompressed) do
+    case ExSecp256k1.create_public_key(private_key) do
       {:ok, public_key} -> {:ok, public_key}
       {:error, reason} -> {:error, to_string(reason)}
     end
@@ -84,7 +84,12 @@ defmodule Itest.Account do
     {:ok, address}
   end
 
-  defp hash(message), do: ExthCrypto.Hash.hash(message, ExthCrypto.Hash.kec())
+  defp hash(message) do
+    case ExKeccak.hash_256(message) do
+      {:ok, hash} -> hash
+      error -> throw(error)
+    end
+  end
 
   defp create_account_from_secret(secret, passphrase) do
     if Application.get_env(:itest, :reorg) do

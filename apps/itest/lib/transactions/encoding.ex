@@ -43,13 +43,7 @@ defmodule Itest.Transactions.Encoding do
   def signature_digest(hash_digest, private_key_hash) do
     private_key_binary = to_binary(private_key_hash)
 
-    {:ok, <<r::size(256), s::size(256)>>, recovery_id} =
-      :libsecp256k1.ecdsa_sign_compact(
-        hash_digest,
-        private_key_binary,
-        :default,
-        <<>>
-      )
+    {:ok, {<<r::size(256), s::size(256)>>, recovery_id}} = ExSecp256k1.sign_compact(hash_digest, private_key_binary)
 
     # EIP-155
     # See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
