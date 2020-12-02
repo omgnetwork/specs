@@ -84,7 +84,12 @@ defmodule Itest.Account do
     {:ok, address}
   end
 
-  defp hash(message), do: elem(ExKeccak.hash_256(message), 1)
+  defp hash(message) do
+    case ExKeccak.hash_256(message) do
+      {:ok, hash} -> hash
+      error -> throw(error)
+    end
+  end
 
   defp create_account_from_secret(secret, passphrase) do
     if Application.get_env(:itest, :reorg) do
