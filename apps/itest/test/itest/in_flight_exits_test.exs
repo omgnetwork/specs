@@ -1242,7 +1242,8 @@ defmodule InFlightExitsTests do
 
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
-    data = ABI.encode("inFlightExits(uint160[])", [[ife_exit_id]])
+    signature = "inFlightExits(uint160[])"
+    data = ABI.encode(signature, [[ife_exit_id]])
 
     {:ok, result} =
       Ethereumex.HttpClient.eth_call(%{
@@ -1251,25 +1252,11 @@ defmodule InFlightExitsTests do
         data: Encoding.to_hex(data)
       })
 
-    return_struct = [
-      {:array,
-       {
-         :tuple,
-         [
-           :bool,
-           {:uint, 64},
-           {:uint, 256},
-           {:uint, 256},
-           # NOTE: there are these two more fields in the return but they can be ommitted,
-           #       both have withdraw_data_struct type
-           # withdraw_data_struct,
-           # withdraw_data_struct,
-           :address,
-           {:uint, 256},
-           {:uint, 256}
-         ]
-       }}
-    ]
+    "0x" <> data = result
+    <<method_id::binary-size(4), _::binary>> = elem(ExKeccak.hash_256(signature), 1)
+    enriched_data = method_id |> Encoding.to_hex() |> Kernel.<>(data) |> Encoding.to_binary()
+
+    {_function_spec, data} = ABI.find_and_decode([in_flight_exits()], enriched_data)
 
     return_fields = [
       :is_canonical,
@@ -1281,14 +1268,7 @@ defmodule InFlightExitsTests do
       :oldest_competitor_position
     ]
 
-    # A temporary work around for `ex_abi` incorrectly decoding arrays.
-    # See https://github.com/poanetwork/ex_abi/issues/22
-    <<32::size(32)-unit(8), raw_array_data::binary>> = Encoding.to_binary(result)
-
-    ife_exit_ids =
-      raw_array_data
-      |> ABI.TypeDecoder.decode(return_struct)
-      |> Enum.map(&IfeExits.to_struct(&1, return_fields))
+    ife_exit_ids = Enum.map(data, &IfeExits.to_struct(&1, return_fields))
 
     _ = Logger.info("IFEs #{inspect(ife_exit_ids)}")
     ife_exit_ids
@@ -1415,5 +1395,33 @@ defmodule InFlightExitsTests do
       {:ok, hash} -> hash
       error -> throw(error)
     end
+  end
+
+  def in_flight_exits() do
+    %ABI.FunctionSelector{
+      function: "inFlightExits",
+      input_names: ["in_flight_exit_structs"],
+      inputs_indexed: nil,
+      method_id: <<206, 201, 225, 167>>,
+      # returns: [
+      #   array: {:tuple,
+      #           [
+      #             :bool,
+      #             {:uint, 64},
+      #             {:uint, 256},
+      #             {:uint, 256},
+      #             {:array, :tuple, 4},
+      #             {:array, :tuple, 4},
+      #             :address,
+      #             {:uint, 256},
+      #             {:uint, 256}
+      #           ]}
+      # ],
+      type: :function,
+      # types: [array: {:uint, 160}]
+      types: [
+        {:array, {:tuple, [:bool, {:uint, 64}, {:uint, 256}, {:uint, 256}, :address, {:uint, 256}, {:uint, 256}]}}
+      ]
+    }
   end
 end
