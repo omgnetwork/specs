@@ -69,7 +69,7 @@ defmodule Itest.StandardExitChallengeClient do
        ) do
     _ = Logger.info("Challenging standard exit.")
 
-    sender_data = address |> Encoding.to_binary() |> ExKeccak.hash_256() |> elem(1)
+    sender_data = address |> Encoding.to_binary() |> hash()
 
     data =
       ABI.encode("challengeStandardExit((uint160,bytes,bytes,uint16,bytes,bytes32))", [
@@ -90,5 +90,12 @@ defmodule Itest.StandardExitChallengeClient do
 
     wait_on_receipt_confirmed(receipt_hash)
     %{challenge | challenge_standard_exit_hash: receipt_hash}
+  end
+
+  defp hash(message) do
+    case ExKeccak.hash_256(message) do
+      {:ok, hash} -> hash
+      error -> throw(error)
+    end
   end
 end
