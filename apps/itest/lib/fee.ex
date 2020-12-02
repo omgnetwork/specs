@@ -22,7 +22,7 @@ defmodule Itest.Fee do
   get all supported fees for payment transactions
   """
   def get_fees() do
-    payment_v1 = ExPlasma.payment_v1()
+    payment_v1 = ExPlasma.payment_v1() |> :binary.decode_unsigned() |> to_string()
     {:ok, %{^payment_v1 => fees}} = Client.get_fees()
     fees
   end
