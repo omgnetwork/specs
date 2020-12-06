@@ -61,11 +61,11 @@ defmodule Itest.ContractEvent do
 
         case Enum.count(topics) do
           4 ->
-            abi = Keyword.fetch!(state, :abi)
+            abis = Keyword.fetch!(state, :abis)
 
             event =
               ABI.Event.find_and_decode(
-                abi,
+                abis,
                 Encoding.to_binary(Enum.at(topics, 0)),
                 Encoding.to_binary(Enum.at(topics, 1)),
                 Encoding.to_binary(Enum.at(topics, 2)),
@@ -88,14 +88,9 @@ defmodule Itest.ContractEvent do
     ws_url = Keyword.fetch!(opts, :ws_url)
     abi_path = Keyword.fetch!(opts, :abi_path)
 
-    abi =
-      abi_path
-      |> File.read!()
-      |> Jason.decode!()
-      |> Map.fetch!("abi")
-      |> ABI.parse_specification(include_events?: true)
+    abis = AbiEvents.get(abi_path)
 
-    case WebSockex.start_link(ws_url, __MODULE__, [{:abi, abi} | opts], name: name) do
+    case WebSockex.start_link(ws_url, __MODULE__, [{:abis, abis} | opts], name: name) do
       {:error, {:already_started, pid}} ->
         {:ok, pid}
 
@@ -115,7 +110,7 @@ defmodule Itest.ContractEvent do
       method: "eth_subscribe",
       params: [
         "logs",
-        Keyword.fetch!(opts, :listen_to)
+        %{"address" => Keyword.fetch!(opts, :listen_to)}
       ]
     }
 

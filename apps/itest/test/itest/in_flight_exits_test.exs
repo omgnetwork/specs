@@ -66,13 +66,16 @@ defmodule InFlightExitsTests do
     # as we're testing IFEs, queue needs to be empty
     0 = get_next_exit_from_queue()
     vault_address = Currency.ether() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
+    plasma_framework = Itest.PlasmaFramework.address()
+
+    exit_game_contract_address = Itest.PlasmaFramework.exit_game_contract_address(ExPlasma.payment_v1())
 
     {:ok, _} =
       Itest.ContractEvent.start_link(
         ws_url: "ws://127.0.0.1:8546",
         name: :eth_vault,
-        listen_to: %{"address" => vault_address},
-        abi_path: Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/", "EthVault.json"]),
+        listen_to: [vault_address, plasma_framework, exit_game_contract_address],
+        abi_path: Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
         subscribe: self()
       )
 
@@ -1276,14 +1279,14 @@ defmodule InFlightExitsTests do
 
   defp capture_blknum_from_event(address, amount) do
     receive do
-      {:event, {%ABI.FunctionSelector{}, event}} = message ->
+      {:event,
+       {%ABI.FunctionSelector{},
         [
           {"depositor", "address", true, event_account},
           {"blknum", "uint256", true, event_blknum},
           {"token", "address", true, event_token},
           {"amount", "uint256", false, event_amount}
-        ] = event
-
+        ]}} = message ->
         # is this really our deposit?
         # let's double check with what we know
         case {Encoding.to_hex(event_account) == address, Currency.ether() == event_token,
