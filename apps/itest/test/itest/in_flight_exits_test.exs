@@ -65,19 +65,8 @@ defmodule InFlightExitsTests do
   setup do
     # as we're testing IFEs, queue needs to be empty
     0 = get_next_exit_from_queue()
-    vault_address = Currency.ether() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
-    plasma_framework = Itest.PlasmaFramework.address()
 
-    exit_game_contract_address = Itest.PlasmaFramework.exit_game_contract_address(ExPlasma.payment_v1())
-
-    {:ok, _} =
-      Itest.ContractEvent.start_link(
-        ws_url: "ws://127.0.0.1:8546",
-        name: :eth_vault,
-        listen_to: [vault_address, plasma_framework, exit_game_contract_address],
-        abi_path: Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
-        subscribe: self()
-      )
+    {:ok, _} = DebugEvents.start_link()
 
     eth_fee =
       Currency.ether()

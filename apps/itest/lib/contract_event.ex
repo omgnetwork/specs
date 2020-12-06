@@ -73,7 +73,14 @@ defmodule Itest.ContractEvent do
                 Encoding.to_binary(result["data"])
               )
 
-            Kernel.send(Keyword.fetch!(state, :subscribe), {:event, event})
+            case Keyword.get(state, :subscribe, nil) do
+              nil ->
+                :ok
+
+              to ->
+                Kernel.send(to, {:event, event})
+            end
+
             _ = Logger.info("Event detected: #{inspect(event)}")
 
           _ ->
