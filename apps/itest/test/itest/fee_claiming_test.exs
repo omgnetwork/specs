@@ -28,6 +28,7 @@ defmodule FeeClaimingTests do
   @payment_tx_type "1"
 
   setup do
+    {:ok, _} = DebugEvents.start_link()
     [{alice_address, alice_pkey}, {bob_address, bob_pkey}] = Account.take_accounts(2)
 
     initial_balance =
