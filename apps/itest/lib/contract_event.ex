@@ -73,13 +73,7 @@ defmodule Itest.ContractEvent do
                 Encoding.to_binary(result["data"])
               )
 
-            case Keyword.get(state, :subscribe, nil) do
-              nil ->
-                :ok
-
-              to ->
-                Kernel.send(to, {:event, event})
-            end
+            forward_event(state, event)
 
             _ = Logger.info("Event detected: #{inspect(event)}")
 
@@ -89,6 +83,16 @@ defmodule Itest.ContractEvent do
     end
 
     {:ok, state}
+  end
+
+  defp forward_event(state, event) do
+    case Keyword.get(state, :subscribe, nil) do
+      nil ->
+        :ok
+
+      to ->
+        Kernel.send(to, {:event, event})
+    end
   end
 
   defp websockex_start_link(name, opts) do
