@@ -1,0 +1,64 @@
+version: 2.1
+commands:
+  install_elixir:
+    description: Installs elixir and checks if docker is healthy
+    steps:
+      - restore_cache:
+          key: v2-asdf-install
+      - run:
+          name: Install Erlang and Elixir
+          command: |
+            [ -d ~/.asdf-vm ] || git clone https://github.com/asdf-vm/asdf.git ~/.asdf-vm --branch v0.8.0
+            echo 'source ~/.asdf-vm/asdf.sh' >> $BASH_ENV
+            source $BASH_ENV
+            asdf plugin-add erlang || asdf plugin-update erlang
+            asdf plugin-add elixir || asdf plugin-update elixir
+            asdf install
+          no_output_timeout: 2400
+      - save_cache:
+          key: v2-asdf-install
+          paths:
+            - ~/.asdf
+            - ~/.asdf-vm
+      - run: make install-hex-rebar
+      - restore_cache:
+          key: v2-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+
+jobs:
+  lint:
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - install_elixir
+      - run:
+          name: Run specs
+          command: |
+            make install
+            make generate_api_code
+            mix deps.get
+      - run:
+          name: (Cabbage) Format generated code and check for warnings
+          environment:
+            MIX_ENV: test
+          command: |
+            # run format ONLY on formatted code so that it cleans up quoted atoms because
+            # we cannot exclude folders to --warnings-as-errors
+            mix format apps/child_chain_api/lib/child_chain_api/model/*.ex
+            mix format apps/watcher_info_api/lib/watcher_info_api/model/*.ex
+            mix format apps/watcher_security_critical_api/lib/watcher_security_critical_api/model/*.ex
+            mix do compile --warnings-as-errors --ignore-module-conflict --force
+      - save_cache:
+          key: v2-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+          paths:
+            - "deps"
+      - run:
+          name: (Cabbage) Credo and formatting
+          command: |
+            mix do credo, format --check-formatted --dry-run
+
+workflows:
+  version: 2
+  build-test:
+    jobs:
+      - lint

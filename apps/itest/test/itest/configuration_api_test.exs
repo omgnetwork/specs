@@ -13,6 +13,7 @@
 # limitations under the License.
 defmodule ConfigurationRetrievalTests do
   use Cabbage.Feature, async: true, file: "configuration_api.feature"
+  @moduletag :configuration
 
   alias Itest.Transactions.Encoding
   require Logger
@@ -21,7 +22,11 @@ defmodule ConfigurationRetrievalTests do
     data = ABI.encode("getVersion()", [])
 
     {:ok, response} =
-      Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+      Ethereumex.HttpClient.eth_call(%{
+        from: Itest.PlasmaFramework.address(),
+        to: Itest.PlasmaFramework.address(),
+        data: Encoding.to_hex(data)
+      })
 
     [{contract_semver}] =
       response

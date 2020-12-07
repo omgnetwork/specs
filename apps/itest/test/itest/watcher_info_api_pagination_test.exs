@@ -14,6 +14,7 @@
 
 defmodule WatcherInfoApiTest do
   use Cabbage.Feature, async: true, file: "watcher_info_api_pagination.feature"
+  @moduletag :watcher_info_api
 
   require Logger
 
@@ -90,8 +91,16 @@ defmodule WatcherInfoApiTest do
         bob_addr
       )
 
+    private_keys =
+      Enum.reduce_while(0..3, [], fn index, sigs ->
+        case typed_data["message"]["input#{index}"] do
+          %{"blknum" => 0, "oindex" => 0, "txindex" => 0} -> {:halt, sigs}
+          _ -> {:cont, [alice_priv | sigs]}
+        end
+      end)
+
     # Alice needs to sign 2 inputs of 1 Eth, 1 for Bob and 1 for the fees
-    transaction = Client.submit_transaction_and_wait(typed_data, sign_hash, [alice_priv])
+    transaction = Client.submit_transaction_and_wait(typed_data, sign_hash, private_keys)
 
     {:ok, Map.put_new(state, :transaction, transaction)}
   end

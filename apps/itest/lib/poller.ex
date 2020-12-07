@@ -51,17 +51,10 @@ defmodule Itest.Poller do
   def submit_typed(typed_data_signed), do: submit_typed(typed_data_signed, @retry_count)
 
   @doc """
-  API:: We pull account balance until we recongnize a change from 0 (which is []) to something
-  """
-  def get_balance(address, currency \\ Currency.ether()) do
-    get_balance(address, Encoding.to_hex(currency), @retry_count)
-  end
-
-  @doc """
   API:: We know exactly what amount in WEI we want to recognize so we aggressively pull until...
   """
   def pull_balance_until_amount(address, amount, currency \\ Currency.ether()) do
-    pull_balance_until_amount(address, amount, Encoding.to_hex(currency), @retry_count)
+    pull_balance_until_amount(address, amount, Encoding.to_hex(currency), 600)
   end
 
   @doc """
@@ -163,33 +156,6 @@ defmodule Itest.Poller do
   defp get_transaction_receipt(receipt_hash),
     do: Ethereumex.HttpClient.eth_get_transaction_receipt(receipt_hash)
 
-  defp get_balance(address, currency, 0) do
-    {:ok, response} = account_get_balances(address)
-    data = Jason.decode!(response.body)["data"]
-    raise "Could not get the account balance for token address #{currency}. Got: #{inspect(data)}"
-  end
-
-  defp get_balance(address, currency, counter) do
-    response =
-      case account_get_balances(address) do
-        {:ok, response} ->
-          decoded_response = Jason.decode!(response.body)
-          Enum.find(decoded_response["data"], :error, fn data -> data["currency"] == currency end)
-
-        _ ->
-          :error
-      end
-
-    case response do
-      :error ->
-        Process.sleep(@sleep_retry_sec)
-        get_balance(address, currency, counter - 1)
-
-      balance ->
-        balance
-    end
-  end
-
   defp pull_balance_until_amount(address, amount, currency, 0) do
     {:ok, response} = account_get_balances(address)
     data = Jason.decode!(response.body)["data"]
@@ -264,7 +230,11 @@ defmodule Itest.Poller do
   defp do_root_chain_get_erc20_balance(address, currency) do
     data = ABI.encode("balanceOf(address)", [Encoding.to_binary(address)])
 
-    case Ethereumex.HttpClient.eth_call(%{to: Encoding.to_hex(currency), data: Encoding.to_hex(data)}) do
+    case Ethereumex.HttpClient.eth_call(%{
+           from: Encoding.to_hex(currency),
+           to: Encoding.to_hex(currency),
+           data: Encoding.to_hex(data)
+         }) do
       {:ok, result} ->
         balance =
           result

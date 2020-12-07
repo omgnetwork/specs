@@ -14,6 +14,7 @@
 
 defmodule InFlightExitsTests do
   use Cabbage.Feature, async: false, file: "in_flight_exits.feature"
+  @moduletag :in_flight_exit
 
   require Logger
 
@@ -29,6 +30,7 @@ defmodule InFlightExitsTests do
   alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
   alias Itest.Client
   alias Itest.Fee
+  alias Itest.InFlightExitClient
   alias Itest.StandardExitChallengeClient
   alias Itest.StandardExitClient
   alias Itest.Transactions.Currency
@@ -450,10 +452,12 @@ defmodule InFlightExitsTests do
     {:ok, Map.put(state, entity, bob_state)}
   end
 
-  defand ~r/^Alice starts an in flight exit from the most recently created transaction$/, _, state do
+  defand ~r/^"(?<entity>[^"]+)" starts an in flight exit from the most recently created transaction$/,
+         %{entity: entity},
+         state do
     exit_game_contract_address = state["exit_game_contract_address"]
     in_flight_exit_bond_size = state["in_flight_exit_bond_size"]
-    %{address: address, txbytes: txbytes} = alice_state = state["Alice"]
+    %{address: address, txbytes: txbytes} = alice_state = state[entity]
     payload = %InFlightExitTxBytesBodySchema{txbytes: Encoding.to_hex(txbytes)}
     response = pull_api_until_successful(InFlightExit, :in_flight_exit_get_data, Watcher.new(), payload)
     exit_data = IfeExitData.to_struct(response)
@@ -464,7 +468,6 @@ defmodule InFlightExitsTests do
       |> Map.put(:exit_data, exit_data)
       |> Map.put(:receipt_hashes, [receipt_hash | alice_state.receipt_hashes])
 
-    entity = "Alice"
     {:ok, Map.put(state, entity, alice_state)}
   end
 
@@ -958,6 +961,25 @@ defmodule InFlightExitsTests do
     assert Itest.Poller.exitable_utxo_absent?(address, input_pos)
   end
 
+  defwhen ~r/^"(?<entity>[^"]+)" deletes its most recent in flight exit$/,
+          %{entity: entity},
+          state do
+    exit_game_contract_address = state["exit_game_contract_address"]
+    %{address: address, exit_data: exit_data} = state[entity]
+
+    in_flight_exit_id = get_in_flight_exit_id(exit_game_contract_address, exit_data)
+
+    _ = wait_for_min_exit_period()
+    InFlightExitClient.delete_in_flight_exit(address, exit_game_contract_address, in_flight_exit_id)
+
+    {:ok, state}
+  end
+
+  defthen ~r/^watcher does not report any byzantine events/, _, state do
+    assert all_events_in_status?([])
+    {:ok, state}
+  end
+
   ###############################################################################################
   ####
   #### PRIVATE
@@ -1012,7 +1034,12 @@ defmodule InFlightExitsTests do
     data =
       ABI.encode("getNextExit(uint256,address)", [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether()])
 
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: Itest.PlasmaFramework.address(),
+        to: Itest.PlasmaFramework.address(),
+        data: Encoding.to_hex(data)
+      })
 
     case Encoding.to_binary(result) do
       "" ->
@@ -1027,7 +1054,14 @@ defmodule InFlightExitsTests do
   defp wait_for_min_exit_period() do
     _ = Logger.info("Wait for exit period to pass.")
     data = ABI.encode("minExitPeriod()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: Itest.PlasmaFramework.address(),
+        to: Itest.PlasmaFramework.address(),
+        data: Encoding.to_hex(data)
+      })
+
     # result is in seconds
     result
     |> Encoding.to_binary()
@@ -1181,7 +1215,13 @@ defmodule InFlightExitsTests do
     _ = Logger.info("Get in flight exit id...")
     txbytes = Encoding.to_binary(exit_data.in_flight_tx)
     data = ABI.encode("getInFlightExitId(bytes)", [txbytes])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     ife_exit_id =
       result
@@ -1197,7 +1237,13 @@ defmodule InFlightExitsTests do
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
     data = ABI.encode("inFlightExits(uint168[])", [[ife_exit_id]])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     return_struct = [
       {:array,
@@ -1274,7 +1320,13 @@ defmodule InFlightExitsTests do
   defp get_in_flight_exit_bond_size(exit_game_contract_address) do
     _ = Logger.info("Trying to get bond size for in flight exit.")
     data = ABI.encode("startIFEBondSize()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     result
     |> Encoding.to_binary()
@@ -1335,7 +1387,13 @@ defmodule InFlightExitsTests do
   defp get_piggyback_bond_size(exit_game_contract_address) do
     _ = Logger.info("Trying to get bond size for piggback.")
     data = ABI.encode("piggybackBondSize()", [])
-    {:ok, result} = Ethereumex.HttpClient.eth_call(%{to: exit_game_contract_address, data: Encoding.to_hex(data)})
+
+    {:ok, result} =
+      Ethereumex.HttpClient.eth_call(%{
+        from: exit_game_contract_address,
+        to: exit_game_contract_address,
+        data: Encoding.to_hex(data)
+      })
 
     piggyback_bond_size =
       result
