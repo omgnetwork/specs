@@ -1003,7 +1003,7 @@ defmodule InFlightExitsTests do
     # the important part is that there is an assertion that those exits got processed
     data =
       ABI.encode(
-        "processExits(uint256,address,uint160,uint256)",
+        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256)",
         [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether(), 0, 2]
       )
 
@@ -1045,7 +1045,7 @@ defmodule InFlightExitsTests do
 
           result ->
             next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
-            next_exit_id &&& (1 <<< 160) - 1
+            next_exit_id &&& (1 <<< Itest.Configuration.exit_id_size()) - 1
         end
     end
   end
@@ -1234,7 +1234,7 @@ defmodule InFlightExitsTests do
 
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
-    signature = "inFlightExits(uint160[])"
+    signature = "inFlightExits(#{Itest.Configuration.exit_id_type()}[])"
     data = ABI.encode(signature, [[ife_exit_id]])
 
     {:ok, result} =
