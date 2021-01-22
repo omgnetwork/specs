@@ -23,6 +23,7 @@ defmodule Itest.MixProject do
 
   defp deps() do
     [
+      # ex plasma based on 0.2.0 but with rust deps
       {:ex_plasma, git: "https://github.com/omisego/ex_plasma.git", ref: "5e94c4fc82dbf26cb457b30911505ec45ec534ea"},
       {:watcher_info_api, in_umbrella: true},
       {:watcher_security_critical_api, in_umbrella: true},
