@@ -27,6 +27,8 @@ defmodule TransactionsTests do
   # to the other half
   @num_accounts 4
   setup do
+    {:ok, _} = DebugEvents.start_link()
+
     {alices, bobs} =
       @num_accounts
       |> Account.take_accounts()

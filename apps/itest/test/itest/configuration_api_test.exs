@@ -28,10 +28,10 @@ defmodule ConfigurationRetrievalTests do
         data: Encoding.to_hex(data)
       })
 
-    [{contract_semver}] =
+    [contract_semver] =
       response
       |> Encoding.to_binary()
-      |> ABI.TypeDecoder.decode([{:tuple, [:string]}])
+      |> ABI.TypeDecoder.decode([:string])
 
     %{
       watcher_assert_response: %{

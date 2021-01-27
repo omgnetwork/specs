@@ -11,27 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-defmodule Itest.Fee do
+defmodule AbiEvents do
   @moduledoc """
-  Functions to pull fees
+  Extract ABI event definitions from contract ABIs
   """
+  require Logger
 
-  alias Itest.Client
-
-  @doc """
-  get all supported fees for payment transactions
-  """
-  def get_fees() do
-    payment_v1 = ExPlasma.payment_v1() |> :binary.decode_unsigned() |> to_string()
-    {:ok, %{^payment_v1 => fees}} = Client.get_fees()
-    fees
-  end
-
-  @doc """
-  get the fee for a specific currency
-  """
-  def get_for_currency(currency) do
-    fees = get_fees()
-    Enum.find(fees, &(&1["currency"] == currency))
+  def get(abi_path) do
+    abi_path
+    |> File.ls!()
+    |> Enum.map(fn file ->
+      try do
+        [abi_path, file]
+        |> Path.join()
+        |> File.read!()
+        |> Jason.decode!()
+        |> Map.fetch!("abi")
+        |> ABI.parse_specification(include_events?: true)
+      rescue
+        x in [MatchError, RuntimeError] ->
+          _ = Logger.warn("couldn't parse! #{file} because of #{inspect(x)}")
+          []
+      end
+    end)
+    |> List.flatten()
+    |> Enum.filter(fn fs -> fs.type == :event end)
   end
 end

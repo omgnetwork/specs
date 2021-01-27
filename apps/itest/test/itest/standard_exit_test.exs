@@ -23,6 +23,7 @@ defmodule StandardExitsTests do
   alias Itest.Transactions.Currency
 
   setup do
+    {:ok, _} = DebugEvents.start_link()
     [{alice_account, alice_pkey}] = Account.take_accounts(1)
 
     erc20_amount = Currency.to_wei(100)

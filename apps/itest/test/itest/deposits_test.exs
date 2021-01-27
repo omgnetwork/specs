@@ -25,6 +25,7 @@ defmodule DepositsTests do
   alias Itest.Transactions.Currency
 
   setup do
+    {:ok, _} = DebugEvents.start_link()
     [{alice_account, alice_pkey}, {bob_account, _bob_pkey}] = Account.take_accounts(2)
 
     %{alice_account: alice_account, alice_pkey: alice_pkey, bob_account: bob_account, gas: 0}

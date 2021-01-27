@@ -65,16 +65,8 @@ defmodule InFlightExitsTests do
   setup do
     # as we're testing IFEs, queue needs to be empty
     0 = get_next_exit_from_queue()
-    vault_address = Currency.ether() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
 
-    {:ok, _} =
-      Itest.ContractEvent.start_link(
-        ws_url: "ws://127.0.0.1:8546",
-        name: :eth_vault,
-        listen_to: %{"address" => vault_address},
-        abi_path: Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/", "EthVault.json"]),
-        subscribe: self()
-      )
+    {:ok, _} = DebugEvents.start_link()
 
     eth_fee =
       Currency.ether()
@@ -1011,7 +1003,7 @@ defmodule InFlightExitsTests do
     # the important part is that there is an assertion that those exits got processed
     data =
       ABI.encode(
-        "processExits(uint256,address,uint168,uint256)",
+        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256)",
         [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether(), 0, 2]
       )
 
@@ -1034,20 +1026,27 @@ defmodule InFlightExitsTests do
     data =
       ABI.encode("getNextExit(uint256,address)", [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether()])
 
-    {:ok, result} =
+    result =
       Ethereumex.HttpClient.eth_call(%{
         from: Itest.PlasmaFramework.address(),
         to: Itest.PlasmaFramework.address(),
         data: Encoding.to_hex(data)
       })
 
-    case Encoding.to_binary(result) do
-      "" ->
-        :queue_not_added
+    case result do
+      # thats how geth after 1.9.15 reverts this call
+      {:error, %{"code" => 3, "data" => _, "message" => "execution reverted: Queue is empty"}} ->
+        0
 
-      result ->
-        next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
-        next_exit_id &&& (1 <<< 168) - 1
+      {:ok, result} ->
+        case Encoding.to_binary(result) do
+          "" ->
+            :queue_not_added
+
+          result ->
+            next_exit_id = hd(ABI.TypeDecoder.decode(result, [{:uint, 256}]))
+            next_exit_id &&& (1 <<< Itest.Configuration.exit_id_size()) - 1
+        end
     end
   end
 
@@ -1115,7 +1114,7 @@ defmodule InFlightExitsTests do
       {Encoding.to_binary(ife_input_challenge.in_flight_txbytes), ife_input_challenge.in_flight_input_index,
        Encoding.to_binary(ife_input_challenge.spending_txbytes), ife_input_challenge.spending_input_index,
        Encoding.to_binary(ife_input_challenge.spending_sig), Encoding.to_binary(ife_input_challenge.input_tx),
-       ife_input_challenge.input_utxo_pos, rest_address |> Base.decode16!(case: :lower) |> :keccakf1600.sha3_256()}
+       ife_input_challenge.input_utxo_pos, rest_address |> Base.decode16!(case: :lower) |> hash()}
     ]
 
     data =
@@ -1149,8 +1148,7 @@ defmodule InFlightExitsTests do
       {Encoding.to_binary(ife_output_challenge.in_flight_txbytes),
        Encoding.to_binary(ife_output_challenge.in_flight_proof), ife_output_challenge.in_flight_output_pos,
        Encoding.to_binary(ife_output_challenge.spending_txbytes), ife_output_challenge.spending_input_index,
-       Encoding.to_binary(ife_output_challenge.spending_sig),
-       rest_address |> Base.decode16!(case: :lower) |> :keccakf1600.sha3_256()}
+       Encoding.to_binary(ife_output_challenge.spending_sig), rest_address |> Base.decode16!(case: :lower) |> hash()}
     ]
 
     data =
@@ -1236,7 +1234,8 @@ defmodule InFlightExitsTests do
 
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
     _ = Logger.info("Get in flight exits...")
-    data = ABI.encode("inFlightExits(uint168[])", [[ife_exit_id]])
+    signature = "inFlightExits(#{Itest.Configuration.exit_id_type()}[])"
+    data = ABI.encode(signature, [[ife_exit_id]])
 
     {:ok, result} =
       Ethereumex.HttpClient.eth_call(%{
@@ -1245,25 +1244,11 @@ defmodule InFlightExitsTests do
         data: Encoding.to_hex(data)
       })
 
-    return_struct = [
-      {:array,
-       {
-         :tuple,
-         [
-           :bool,
-           {:uint, 64},
-           {:uint, 256},
-           {:uint, 256},
-           # NOTE: there are these two more fields in the return but they can be ommitted,
-           #       both have withdraw_data_struct type
-           # withdraw_data_struct,
-           # withdraw_data_struct,
-           :address,
-           {:uint, 256},
-           {:uint, 256}
-         ]
-       }}
-    ]
+    "0x" <> data = result
+    <<method_id::binary-size(4), _::binary>> = elem(ExKeccak.hash_256(signature), 1)
+    enriched_data = method_id |> Encoding.to_hex() |> Kernel.<>(data) |> Encoding.to_binary()
+
+    {_function_spec, data} = ABI.find_and_decode([in_flight_exits()], enriched_data)
 
     return_fields = [
       :is_canonical,
@@ -1275,14 +1260,7 @@ defmodule InFlightExitsTests do
       :oldest_competitor_position
     ]
 
-    # A temporary work around for `ex_abi` incorrectly decoding arrays.
-    # See https://github.com/poanetwork/ex_abi/issues/22
-    <<32::size(32)-unit(8), raw_array_data::binary>> = Encoding.to_binary(result)
-
-    ife_exit_ids =
-      raw_array_data
-      |> ABI.TypeDecoder.decode(return_struct)
-      |> Enum.map(&IfeExits.to_struct(&1, return_fields))
+    ife_exit_ids = Enum.map(data, &IfeExits.to_struct(&1, return_fields))
 
     _ = Logger.info("IFEs #{inspect(ife_exit_ids)}")
     ife_exit_ids
@@ -1290,14 +1268,14 @@ defmodule InFlightExitsTests do
 
   defp capture_blknum_from_event(address, amount) do
     receive do
-      {:event, {%ABI.FunctionSelector{}, event}} = message ->
+      {:event,
+       {%ABI.FunctionSelector{},
         [
           {"depositor", "address", true, event_account},
           {"blknum", "uint256", true, event_blknum},
           {"token", "address", true, event_token},
           {"amount", "uint256", false, event_amount}
-        ] = event
-
+        ]}} = message ->
         # is this really our deposit?
         # let's double check with what we know
         case {Encoding.to_hex(event_account) == address, Currency.ether() == event_token,
@@ -1402,5 +1380,40 @@ defmodule InFlightExitsTests do
       |> hd()
 
     piggyback_bond_size
+  end
+
+  defp hash(message) do
+    case ExKeccak.hash_256(message) do
+      {:ok, hash} -> hash
+      error -> throw(error)
+    end
+  end
+
+  def in_flight_exits() do
+    %ABI.FunctionSelector{
+      function: "inFlightExits",
+      input_names: ["in_flight_exit_structs"],
+      inputs_indexed: nil,
+      method_id: <<206, 201, 225, 167>>,
+      # returns: [
+      #   array: {:tuple,
+      #           [
+      #             :bool,
+      #             {:uint, 64},
+      #             {:uint, 256},
+      #             {:uint, 256},
+      #             {:array, :tuple, 4},
+      #             {:array, :tuple, 4},
+      #             :address,
+      #             {:uint, 256},
+      #             {:uint, 256}
+      #           ]}
+      # ],
+      type: :function,
+      # types: [array: {:uint, 160}]
+      types: [
+        {:array, {:tuple, [:bool, {:uint, 64}, {:uint, 256}, {:uint, 256}, :address, {:uint, 256}, {:uint, 256}]}}
+      ]
+    }
   end
 end

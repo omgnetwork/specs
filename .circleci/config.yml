@@ -1,6 +1,21 @@
 version: 2.1
 commands:
-  install_elixir:
+  add_rust_to_path:
+    description: "Add path to PATH env var"
+    steps:
+      - run:
+          name: Add rust to PATH env
+          command: echo 'export PATH=~/.cargo/bin/:$PATH' >> $BASH_ENV
+
+  install_rust:
+    description: "Install Rust"
+    steps:
+      - run:
+          name: Install Rust
+          command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      - add_rust_to_path
+
+  install_elixir_and_rust:
     description: Installs elixir and checks if docker is healthy
     steps:
       - restore_cache:
@@ -13,8 +28,10 @@ commands:
             source $BASH_ENV
             asdf plugin-add erlang || asdf plugin-update erlang
             asdf plugin-add elixir || asdf plugin-update elixir
+            asdf plugin-add rust || asdf plugin-update rust
             asdf install
-          no_output_timeout: 2400
+          no_output_timeout: 4400
+      - install_rust
       - save_cache:
           key: v2-asdf-install
           paths:
@@ -30,7 +47,7 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - install_elixir
+      - install_elixir_and_rust
       - run:
           name: Run specs
           command: |

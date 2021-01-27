@@ -1,4 +1,4 @@
-# Copyright 2019-2020 OmiseGO Pte Ltd
+# Copyright 2019-2021 OMG Network Pte Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,27 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-defmodule Itest.Fee do
-  @moduledoc """
-  Functions to pull fees
-  """
 
-  alias Itest.Client
+defmodule Itest.Configuration do
+  @moduledoc false
 
-  @doc """
-  get all supported fees for payment transactions
-  """
-  def get_fees() do
-    payment_v1 = ExPlasma.payment_v1() |> :binary.decode_unsigned() |> to_string()
-    {:ok, %{^payment_v1 => fees}} = Client.get_fees()
-    fees
+  def exit_id_size() do
+    Application.get_env(:itest, :exit_id_size)
   end
 
-  @doc """
-  get the fee for a specific currency
-  """
-  def get_for_currency(currency) do
-    fees = get_fees()
-    Enum.find(fees, &(&1["currency"] == currency))
+  def exit_id_type() do
+    case exit_id_size() do
+      168 -> :uint168
+      160 -> :uint160
+    end
   end
 end

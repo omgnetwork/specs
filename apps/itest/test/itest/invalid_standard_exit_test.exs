@@ -28,6 +28,7 @@ defmodule InvalidStandardExitsTests do
   import Itest.Poller, only: [pull_api_until_successful: 3, pull_api_until_successful: 4, all_events_in_status?: 1]
 
   setup do
+    {:ok, _} = DebugEvents.start_link()
     [{alice_account, alice_pkey}, {bob_account, _bob_pkey}, {carol_account, carol_pkey}] = Account.take_accounts(3)
 
     %{
