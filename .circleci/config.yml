@@ -19,7 +19,7 @@ commands:
     description: Installs elixir and checks if docker is healthy
     steps:
       - restore_cache:
-          key: v2-asdf-install
+          key: v3-asdf-install
       - run:
           name: Install Erlang and Elixir
           command: |
@@ -33,13 +33,13 @@ commands:
           no_output_timeout: 4400
       - install_rust
       - save_cache:
-          key: v2-asdf-install
+          key: v3-asdf-install
           paths:
             - ~/.asdf
             - ~/.asdf-vm
       - run: make install-hex-rebar
       - restore_cache:
-          key: v2-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+          key: v3-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
 
 jobs:
   lint:
@@ -66,7 +66,7 @@ jobs:
             mix format apps/watcher_security_critical_api/lib/watcher_security_critical_api/model/*.ex
             mix do compile --warnings-as-errors --ignore-module-conflict --force
       - save_cache:
-          key: v2-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
+          key: v3-mix-specs-cache-{{ .Branch }}-{{ checksum "mix.lock" }}
           paths:
             - "deps"
       - run:
