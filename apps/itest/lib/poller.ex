@@ -275,6 +275,9 @@ defmodule Itest.Poller do
 
       %{"txhash" => _} ->
         SubmitTransactionResponse.to_struct(decoded_response)
+
+      %{"tx_hash" => _} ->
+        SubmitTransactionResponse.to_struct(decoded_response)
     end
   end
 
