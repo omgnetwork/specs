@@ -338,7 +338,7 @@ defmodule Itest.StandardExitClient do
   end
 
   defp from_deposit?(encoded_utxo_pos) do
-    {:ok, %ExPlasma.Utxo{blknum: blknum, txindex: 0, oindex: 0}} = ExPlasma.Utxo.new(encoded_utxo_pos)
+    {:ok, %{blknum: blknum}} = ExPlasma.Output.Position.to_map(encoded_utxo_pos)
     rem(blknum, 1000) != 0
   end
 end

@@ -10,6 +10,9 @@ config :itest,
   localchain_contract_env_path:
     System.get_env("LOCALCHAIN_CONTRACT_ADDRESSES") || "./../../localchain_contract_addresses.env"
 
+config :ex_plasma,
+  exit_id_size: String.to_integer(System.get_env("EXIT_ID_SIZE") || "160") # 168 contracts v2
+
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 config :logger, level: :info
