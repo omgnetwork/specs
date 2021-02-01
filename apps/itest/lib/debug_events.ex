@@ -30,7 +30,9 @@ defmodule DebugEvents do
       ws_url: "ws://127.0.0.1:8546",
       name: :eth_vault,
       listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
-      abi_path: System.get_env("PLASMA_CONTRACTS_DIR") || Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
+      abi_path:
+        System.get_env("PLASMA_CONTRACTS_DIR") ||
+          Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
       subscribe: self()
     )
   end
