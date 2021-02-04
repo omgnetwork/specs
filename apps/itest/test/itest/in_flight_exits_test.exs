@@ -551,6 +551,7 @@ defmodule InFlightExitsTests do
     payload = %InFlightExitTxBytesBodySchema{txbytes: Encoding.to_hex(bob_unsigned_txbytes)}
 
     response = pull_api_until_successful(InFlightExit, :in_flight_exit_get_competitor, Watcher.new(), payload)
+
     ife_competitor = IfeCompetitor.to_struct(response)
 
     assert ife_competitor.competing_tx_pos > 0
@@ -1030,7 +1031,7 @@ defmodule InFlightExitsTests do
        Encoding.to_binary(ife_competitor.in_flight_txbytes), ife_competitor.in_flight_input_index,
        Encoding.to_binary(ife_competitor.competing_txbytes), ife_competitor.competing_input_index,
        ife_competitor.competing_tx_pos, Encoding.to_binary(ife_competitor.competing_proof),
-       Encoding.to_binary(ife_competitor.competing_sig)}
+       Encoding.to_binary(ife_competitor.challenge_tx_sig)}
     ]
 
     data =
