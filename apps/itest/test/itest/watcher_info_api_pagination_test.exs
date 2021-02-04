@@ -27,6 +27,7 @@ defmodule WatcherInfoApiTest do
   @to_milliseconds 1000
 
   setup do
+    {:ok, _} = DebugEvents.start_link()
     accounts = Account.take_accounts(2)
     alice_account = Enum.at(accounts, 0)
     bob_account = Enum.at(accounts, 1)
@@ -100,6 +101,7 @@ defmodule WatcherInfoApiTest do
       end)
 
     # Alice needs to sign 2 inputs of 1 Eth, 1 for Bob and 1 for the fees
+    IO.inspect({typed_data, sign_hash, private_keys}, label: "typed_data, sign_hash, private_keys")
     transaction = Client.submit_transaction_and_wait(typed_data, sign_hash, private_keys)
 
     {:ok, Map.put_new(state, :transaction, transaction)}
@@ -109,7 +111,7 @@ defmodule WatcherInfoApiTest do
           _,
           %{transaction: transaction, alice_account: alice_account} = state do
     {alice_addr, _alice_priv} = alice_account
-    {:ok, tx_data} = Client.get_transaction(transaction.txhash)
+    {:ok, tx_data} = Client.get_transaction(transaction.tx_hash)
     %{"data" => tx} = tx_data
     {:ok, data} = Client.get_transactions(%{end_datetime: tx["block"]["timestamp"], limit: 10})
     %{"data" => transactions} = data

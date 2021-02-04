@@ -18,11 +18,11 @@ defmodule Itest.ApiModel.SubmitTransactionResponse do
 
   require Logger
 
-  defstruct [:blknum, :txhash, :tx_index]
+  defstruct [:blknum, :tx_hash, :tx_index]
 
   @type t() :: %__MODULE__{
           blknum: pos_integer(),
-          txhash: binary(),
+          tx_hash: binary(),
           tx_index: non_neg_integer()
         }
 
@@ -52,7 +52,7 @@ defmodule Itest.ApiModel.SubmitTransactionResponse do
 
   defp is_valid(struct) do
     is_integer(struct.blknum) &&
-      is_binary(struct.txhash) &&
+      is_binary(struct.tx_hash) &&
       is_integer(struct.tx_index)
   end
 end

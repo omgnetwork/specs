@@ -20,10 +20,10 @@ defmodule FeeClaimingTests do
 
   alias Itest.Account
   alias Itest.Client
+  alias Itest.Configuration
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
 
-  @fee_claimer_address "0x3b9f4c1dd26e0be593373b1d36cee2008cbeb837"
   @fee_currency <<0::160>>
   @payment_tx_type "1"
 
@@ -32,7 +32,7 @@ defmodule FeeClaimingTests do
     [{alice_address, alice_pkey}, {bob_address, bob_pkey}] = Account.take_accounts(2)
 
     initial_balance =
-      @fee_claimer_address
+      Configuration.fee_claimer_address()
       |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
@@ -106,8 +106,9 @@ defmodule FeeClaimingTests do
   end
 
   defthen ~r/^Operator has claimed the fees$/, _, %{fees_initial_balance: initial_balance} do
+    # fee_claimer_address needs to match the address in docker-compose
     actual_balance =
-      @fee_claimer_address
+      Configuration.fee_claimer_address()
       |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
@@ -131,7 +132,9 @@ defmodule FeeClaimingTests do
       Enum.find(
         response[@payment_tx_type],
         :fee_for_currency_not_found,
-        fn fee_data -> fee_data["currency"] == Encoding.to_hex(@fee_currency) end
+        fn fee_data ->
+          fee_data["currency"] == Encoding.to_hex(@fee_currency)
+        end
       )
 
     fee["amount"]

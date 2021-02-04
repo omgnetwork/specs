@@ -17,7 +17,6 @@ defmodule Itest.ContractEvent do
   """
   use WebSockex
   alias Itest.Transactions.Encoding
-  @subscription_id 1
 
   require Logger
 
@@ -54,38 +53,37 @@ defmodule Itest.ContractEvent do
       nil ->
         :ok
 
-      result ->
-        # parsing events
-        # per spec, they have 4 topics and data field
-        topics = result["topics"]
+      log ->
+        abis = Keyword.fetch!(state, :abis)
 
-        case Enum.count(topics) do
-          4 ->
-            abis = Keyword.fetch!(state, :abis)
+        topics =
+          Enum.map(log["topics"], fn
+            nil -> nil
+            topic -> Encoding.to_binary(topic)
+          end)
 
-            event =
-              ABI.Event.find_and_decode(
-                abis,
-                Encoding.to_binary(Enum.at(topics, 0)),
-                Encoding.to_binary(Enum.at(topics, 1)),
-                Encoding.to_binary(Enum.at(topics, 2)),
-                Encoding.to_binary(Enum.at(topics, 3)),
-                Encoding.to_binary(result["data"])
-              )
+        data = Encoding.to_binary(log["data"])
 
-            forward_event(state, event)
+        event =
+          ABI.Event.find_and_decode(
+            abis,
+            Enum.at(topics, 0),
+            Enum.at(topics, 1),
+            Enum.at(topics, 2),
+            Enum.at(topics, 3),
+            data
+          )
 
-            _ = Logger.info("Event detected: #{inspect(event)}")
-
-          _ ->
-            :ok
-        end
+        forward_event(state, event)
     end
 
     {:ok, state}
   end
 
   defp forward_event(state, event) do
+    {%{function: even_name}, data} = event
+    _ = Logger.info("Event #{even_name} detected: #{inspect(data)}")
+
     case Keyword.get(state, :subscribe, nil) do
       nil ->
         :ok
@@ -106,7 +104,12 @@ defmodule Itest.ContractEvent do
         {:ok, pid}
 
       {:ok, pid} ->
-        spawn(fn -> listen(pid, opts) end)
+        listen_to = Keyword.fetch!(opts, :listen_to)
+
+        Enum.each(listen_to, fn address ->
+          spawn(fn -> listen(pid, address) end)
+        end)
+
         {:ok, pid}
     end
   end
@@ -114,14 +117,14 @@ defmodule Itest.ContractEvent do
   # >> {"id": 1, "method": "eth_subscribe", "params": ["logs",
   #  {"address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
   # "topics": ["0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"]}]}
-  defp listen(pid, opts) do
+  defp listen(pid, address) do
     payload = %{
       jsonrpc: "2.0",
-      id: @subscription_id,
+      id: Enum.random(1..99999),
       method: "eth_subscribe",
       params: [
         "logs",
-        %{"address" => Keyword.fetch!(opts, :listen_to)}
+        %{"address" => address}
       ]
     }
 
