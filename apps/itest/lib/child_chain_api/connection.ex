@@ -23,7 +23,7 @@ if Code.ensure_loaded?(ChildChainAPI.Connection) do
     use Tesla
 
     # Add any middleware here (authentication)
-    plug(Tesla.Middleware.BaseUrl, "http://localhost:9656")
+    plug(Tesla.Middleware.BaseUrl, System.get_env("CHILD_CHAIN_URL"))
     plug(Tesla.Middleware.Headers, [{"user-agent", "Itest-Elixir"}, {"Content-Type", "application/json"}])
     plug(Tesla.Middleware.EncodeJson, engine: Poison)
 
