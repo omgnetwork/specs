@@ -15,6 +15,10 @@
 defmodule Itest.Configuration do
   @moduledoc false
 
+  def child_chain_url() do
+    Application.get_env(:itest, :child_chain_url)
+  end
+
   def fee_claimer_address() do
     Application.get_env(:itest, :fee_claimer_address)
   end

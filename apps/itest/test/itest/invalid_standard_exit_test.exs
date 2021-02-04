@@ -86,7 +86,6 @@ defmodule InvalidStandardExitsTests do
       )
 
     # pattern match just to check success, since this is what `Client` returns to us
-    # TODO: improve with an `{:ok, ...}` perhaps?
     %Itest.ApiModel.SubmitTransactionResponse{blknum: _} =
       Client.submit_transaction(typed_data, sign_hash, [carol_pkey])
 
