@@ -105,13 +105,16 @@ defmodule Itest.ContractEvent do
 
       {:ok, pid} ->
         listen_to = Keyword.fetch!(opts, :listen_to)
-
-        Enum.each(listen_to, fn address ->
-          spawn(fn -> listen(pid, address) end)
-        end)
+        listen(pid, address, listen_to)
 
         {:ok, pid}
     end
+  end
+
+  defp listen(pid, address, listen_to) do
+    Enum.each(listen_to, fn address ->
+      spawn(fn -> listen(pid, address) end)
+    end)
   end
 
   # >> {"id": 1, "method": "eth_subscribe", "params": ["logs",
@@ -120,7 +123,7 @@ defmodule Itest.ContractEvent do
   defp listen(pid, address) do
     payload = %{
       jsonrpc: "2.0",
-      id: Enum.random(1..99999),
+      id: Enum.random(1..99_999),
       method: "eth_subscribe",
       params: [
         "logs",

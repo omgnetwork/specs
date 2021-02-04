@@ -51,7 +51,9 @@ defmodule InvalidStandardExitsTests do
     {:ok, receipt_hash} = Client.deposit(expecting_amount, alice_account, Itest.PlasmaFramework.vault(Currency.ether()))
     gas_used = Client.get_gas_used(receipt_hash)
 
+    _ = Logger.info("Expecting balance on Watcher Info.")
     %{"amount" => ^expecting_amount} = Client.get_exact_balance(alice_account, expecting_amount)
+    _ = Logger.info("Got exact balance on Watcher Info - #{expecting_amount}.")
 
     new_state =
       state

@@ -91,7 +91,7 @@ defmodule Itest.Client do
 
   def submit_transaction_and_wait(typed_data, sign_hash, private_keys) do
     tx = submit_transaction(typed_data, sign_hash, private_keys)
-    IO.inspect(tx, label: "submit_transaction_and_wait")
+
     :ok = wait_until_tx_sync_to_watcher(tx.tx_hash)
     tx
   end
