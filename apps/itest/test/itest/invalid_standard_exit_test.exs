@@ -115,7 +115,7 @@ defmodule InvalidStandardExitsTests do
 
     # get a public-API response that contains exactly the UTXO that alice just spent, for later exiting
     %{"message" => %{"input0" => %{"blknum" => blknum, "oindex" => oindex, "txindex" => txindex}}} = typed_data
-    alice_recently_spent_utxo_pos = ExPlasma.Utxo.pos(%{blknum: blknum, oindex: oindex, txindex: txindex})
+    alice_recently_spent_utxo_pos = ExPlasma.Output.Position.pos(%{blknum: blknum, oindex: oindex, txindex: txindex})
     alice_recently_spent_utxo_pos = get_particular_utxo(alice_account, alice_recently_spent_utxo_pos)
 
     %Itest.ApiModel.SubmitTransactionResponse{blknum: _} =

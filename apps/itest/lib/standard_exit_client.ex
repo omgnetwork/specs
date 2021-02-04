@@ -271,10 +271,13 @@ defmodule Itest.StandardExitClient do
   defp process_exit(se, n_exits) do
     _ = Logger.info("Process exit #{__MODULE__}")
 
+    "0x" <> rest_address = se.address
+    sender_data = rest_address |> Base.decode16!(case: :lower) |> hash()
+
     data =
       ABI.encode(
-        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256)",
-        [Itest.PlasmaFramework.vault_id(se.currency), se.currency, se.standard_exit_id, n_exits]
+        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256,bytes32)",
+        [Itest.PlasmaFramework.vault_id(se.currency), se.currency, se.standard_exit_id, n_exits, sender_data]
       )
 
     txmap = %{
@@ -340,5 +343,12 @@ defmodule Itest.StandardExitClient do
   defp from_deposit?(encoded_utxo_pos) do
     {:ok, %{blknum: blknum}} = ExPlasma.Output.Position.to_map(encoded_utxo_pos)
     rem(blknum, 1000) != 0
+  end
+
+  defp hash(message) do
+    case ExKeccak.hash_256(message) do
+      {:ok, hash} -> hash
+      error -> throw(error)
+    end
   end
 end

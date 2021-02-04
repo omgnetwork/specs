@@ -91,7 +91,7 @@ defmodule Itest.Client do
 
   def submit_transaction_and_wait(typed_data, sign_hash, private_keys) do
     tx = submit_transaction(typed_data, sign_hash, private_keys)
-    :ok = wait_until_tx_sync_to_watcher(tx.txhash)
+    :ok = wait_until_tx_sync_to_watcher(tx.tx_hash)
     tx
   end
 
@@ -270,7 +270,11 @@ defmodule Itest.Client do
 
       _ ->
         Process.sleep(@poll_interval)
-        Logger.info("wating for for watcher info to sync the submitted tx_id: #{tx_id}")
+
+        Logger.info(
+          "wating for for watcher info to sync the submitted tx_id: #{tx_id} current response #{inspect(response)}"
+        )
+
         do_wait_until_tx_sync_to_watcher(tx_id, retry - 1)
     end
   end

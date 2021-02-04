@@ -32,7 +32,7 @@ defmodule Itest.MixProject do
       {:ethereumex, "~> 0.6.0"},
       {:telemetry, "~> 0.4.1"},
       {:websockex, "~> 0.4.2"},
-      {:ex_abi, "~> 0.5.1"},
+      {:ex_abi, "~> 0.5.3"},
       {:ex_rlp, "~> 0.5.3"},
       {:ex_secp256k1, "~> 0.1.2"},
       {:poison, "~> 3.0"},

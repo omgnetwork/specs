@@ -69,7 +69,8 @@ defmodule Itest.StandardExitChallengeClient do
        ) do
     _ = Logger.info("Challenging standard exit.")
 
-    sender_data = address |> Encoding.to_binary() |> hash()
+    "0x" <> rest_address = address
+    sender_data = rest_address |> Base.decode16!(case: :lower) |> hash()
 
     data =
       ABI.encode("challengeStandardExit((#{Itest.Configuration.exit_id_type()},bytes,bytes,uint16,bytes,bytes32))", [

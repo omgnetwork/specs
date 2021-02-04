@@ -61,12 +61,12 @@ contracts =
     Map.put(acc, key, value)
   end)
 
-Application.put_env(:ex_plasma, :eip_712_domain,
+Application.put_env(:ex_plasma, :eip_712_domain, %{
   name: "OMG Network",
   salt: "0xfad5c7f626d80f9256ef01929f3beb96e058b8b4b0e3fe52d84f054c0e2a7a83",
   verifying_contract: contracts["CONTRACT_ADDRESS_PLASMA_FRAMEWORK"],
   version: "1"
-)
+})
 
 ### add exit queues
 gas_add_exit_queue = 800_000
