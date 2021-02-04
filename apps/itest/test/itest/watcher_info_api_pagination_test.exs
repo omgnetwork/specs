@@ -101,7 +101,6 @@ defmodule WatcherInfoApiTest do
       end)
 
     # Alice needs to sign 2 inputs of 1 Eth, 1 for Bob and 1 for the fees
-    IO.inspect({typed_data, sign_hash, private_keys}, label: "typed_data, sign_hash, private_keys")
     transaction = Client.submit_transaction_and_wait(typed_data, sign_hash, private_keys)
 
     {:ok, Map.put_new(state, :transaction, transaction)}

@@ -30,9 +30,10 @@ defmodule FeeClaimingTests do
   setup do
     {:ok, _} = DebugEvents.start_link()
     [{alice_address, alice_pkey}, {bob_address, bob_pkey}] = Account.take_accounts(2)
+    fee_claimer_address = Configuration.fee_claimer_address()
 
     initial_balance =
-      Configuration.fee_claimer_address()
+      fee_claimer_address
       |> Client.get_balance!(@fee_currency)
       |> fix_balance_response()
 
@@ -45,7 +46,7 @@ defmodule FeeClaimingTests do
         address: bob_address,
         pkey: bob_pkey
       },
-      "FeeClaimer" => %{address: @fee_claimer_address},
+      "FeeClaimer" => %{address: fee_claimer_address},
       fees_initial_balance: initial_balance,
       gas: 0
     }
