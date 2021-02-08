@@ -216,7 +216,6 @@ defmodule InFlightExitsTests do
     bob_deposit_utxo = hd(bob_utxos)
 
     # NOTE: Bob-the-double-spender's input comes first, otherwise the currently used contracts impl has problems
-    #    transaction = %Payment{inputs: [bob_deposit_input, alice_deposit_input], outputs: [alice_output, bob_output]}
 
     txn =
       ExPlasma.payment_v1()
