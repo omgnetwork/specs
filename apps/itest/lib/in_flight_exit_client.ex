@@ -27,7 +27,7 @@ defmodule Itest.InFlightExitClient do
   def delete_in_flight_exit(owner, exit_game_contract_address, exit_id) do
     _ = Logger.info("Deleting in-flight exit.")
 
-    data = ABI.encode("deleteNonPiggybackedInFlightExit(uint160)", [exit_id])
+    data = ABI.encode("deleteNonPiggybackedInFlightExit(#{Itest.Configuration.exit_id_type()})", [exit_id])
 
     tx = %{
       from: owner,

@@ -273,9 +273,6 @@ defmodule Itest.Poller do
         Process.sleep(@sleep_retry_sec)
         submit_typed(typed_data_signed, counter - 1)
 
-      %{"txhash" => _} ->
-        SubmitTransactionResponse.to_struct(decoded_response)
-
       %{"tx_hash" => _} ->
         SubmitTransactionResponse.to_struct(decoded_response)
     end

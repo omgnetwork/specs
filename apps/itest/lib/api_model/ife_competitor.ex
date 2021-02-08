@@ -19,7 +19,7 @@ defmodule Itest.ApiModel.IfeCompetitor do
   defstruct [
     :competing_input_index,
     :competing_proof,
-    :competing_sig,
+    :challenge_tx_sig,
     :competing_tx_pos,
     :competing_txbytes,
     :in_flight_input_index,
@@ -31,7 +31,7 @@ defmodule Itest.ApiModel.IfeCompetitor do
   @type t() :: %__MODULE__{
           competing_input_index: integer(),
           competing_proof: binary(),
-          competing_sig: binary(),
+          challenge_tx_sig: binary(),
           competing_tx_pos: integer(),
           competing_txbytes: binary(),
           in_flight_input_index: integer(),
@@ -58,7 +58,7 @@ defmodule Itest.ApiModel.IfeCompetitor do
   defp is_valid(struct) do
     is_integer(struct.competing_input_index) &&
       is_binary(struct.competing_proof) &&
-      is_binary(struct.competing_sig) &&
+      is_binary(struct.challenge_tx_sig) &&
       is_integer(struct.competing_tx_pos) &&
       is_binary(struct.competing_txbytes) &&
       is_integer(struct.in_flight_input_index) &&

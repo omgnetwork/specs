@@ -18,7 +18,6 @@ defmodule InFlightExitsTests do
 
   require Logger
 
-  alias ExPlasma.Transaction.Payment
   alias Itest.Account
   alias Itest.ApiModel.IfeCompetitor
   alias Itest.ApiModel.IfeExitData
@@ -214,56 +213,37 @@ defmodule InFlightExitsTests do
 
     # inputs
     alice_deposit_utxo = hd(alice_utxos)
-
-    alice_deposit_input = %ExPlasma.Utxo{
-      blknum: alice_deposit_utxo["blknum"],
-      currency: Currency.ether(),
-      oindex: 0,
-      txindex: 0,
-      output_type: 1,
-      owner: alice_address
-    }
-
     bob_deposit_utxo = hd(bob_utxos)
 
-    bob_deposit_input = %ExPlasma.Utxo{
-      blknum: bob_deposit_utxo["blknum"],
-      currency: Currency.ether(),
-      oindex: 0,
-      txindex: 0,
-      output_type: 1,
-      owner: bob_address
-    }
-
-    alice_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: alice_child_chain_balance - Currency.to_wei(5) - state["fee"]
-    }
-
-    bob_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: bob_address,
-      amount: amount + bob_child_chain_balance
-    }
-
     # NOTE: Bob-the-double-spender's input comes first, otherwise the currently used contracts impl has problems
-    transaction = %Payment{inputs: [bob_deposit_input, alice_deposit_input], outputs: [alice_output, bob_output]}
 
-    submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [bob_pkey, alice_pkey]
+    txn =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(blknum: bob_deposit_utxo["blknum"], txindex: 0, oindex: 0)
+      |> ExPlasma.Builder.add_input(blknum: alice_deposit_utxo["blknum"], txindex: 0, oindex: 0)
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(alice_address),
+          token: Currency.ether(),
+          amount: alice_child_chain_balance - Currency.to_wei(5) - state["fee"]
+        }
+      )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(bob_address),
+          token: Currency.ether(),
+          amount: amount + bob_child_chain_balance
+        }
       )
 
-    txbytes = ExPlasma.Transaction.encode(submitted_tx)
+    {:ok, submitted_tx} = ExPlasma.Builder.sign(txn, [bob_pkey, alice_pkey])
+    {:ok, txbytes} = ExPlasma.encode(submitted_tx)
 
-    ## we need to duplicate the transaction because we need an unsigned one later!
-    unsigned_submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: []
-      )
-
-    unsigned_txbytes = ExPlasma.Transaction.encode(unsigned_submitted_tx)
+    unsigned_submitted_tx = ExPlasma.Builder.sign(txn, [])
+    {:ok, unsigned_txbytes} = ExPlasma.encode(submitted_tx, signed: false)
 
     alice_state =
       alice_state
@@ -286,38 +266,27 @@ defmodule InFlightExitsTests do
 
     # inputs
     alice_deposit_utxo = hd(alice_utxos)
-
-    alice_deposit_input = %ExPlasma.Utxo{
-      blknum: alice_deposit_utxo["blknum"],
-      currency: Currency.ether(),
-      oindex: 0,
-      txindex: 0,
-      output_type: 1,
-      owner: alice_address
-    }
-
-    alice_output_1 = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: amount
-    }
-
     rest = alice_child_chain_balance - amount - state["fee"]
 
-    alice_output_2 = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: rest
-    }
-
-    transaction = %Payment{inputs: [alice_deposit_input], outputs: [alice_output_1, alice_output_2]}
-
-    in_flight_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [alice_pkey]
+    {:ok, in_flight_tx} =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(blknum: alice_deposit_utxo["blknum"], txindex: 0, oindex: 0)
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(alice_address),
+          token: Currency.ether(),
+          amount: amount
+        }
       )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{output_guard: ExPlasma.Encoding.to_binary!(alice_address), token: Currency.ether(), amount: rest}
+      )
+      |> ExPlasma.Builder.sign([alice_pkey])
 
-    txbytes = ExPlasma.Transaction.encode(in_flight_tx)
+    {:ok, txbytes} = ExPlasma.Transaction.encode(in_flight_tx)
     alice_state = Map.put(alice_state, :txbytes, txbytes)
 
     entity = "Alice"
@@ -333,37 +302,24 @@ defmodule InFlightExitsTests do
     # inputs
     bob_deposit_utxo = hd(bob_utxos)
 
-    bob_deposit_input = %ExPlasma.Utxo{
-      blknum: bob_deposit_utxo["blknum"],
-      currency: Currency.ether(),
-      oindex: 0,
-      txindex: 0,
-      output_type: 1,
-      owner: bob_address
-    }
-
-    # outputs
-    bob_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: bob_address,
-      amount: amount
-    }
-
-    transaction = %Payment{inputs: [bob_deposit_input], outputs: [bob_output]}
-
-    submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [bob_pkey]
+    transaction =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(blknum: bob_deposit_utxo["blknum"], txindex: 0, oindex: 0)
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{output_guard: ExPlasma.Encoding.to_binary!(bob_address), token: Currency.ether(), amount: amount}
       )
 
-    txbytes = ExPlasma.Transaction.encode(submitted_tx)
-
-    unsigned_submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: []
+    {:ok, submitted_tx} =
+      ExPlasma.Builder.sign(
+        transaction,
+        [bob_pkey]
       )
 
-    unsigned_txbytes = ExPlasma.Transaction.encode(unsigned_submitted_tx)
+    {:ok, txbytes} = ExPlasma.Transaction.encode(submitted_tx)
+
+    {:ok, unsigned_txbytes} = ExPlasma.encode(submitted_tx, signed: false)
 
     payload = %InFlightExitTxBytesBodySchema{txbytes: Encoding.to_hex(txbytes)}
     response = pull_api_until_successful(InFlightExit, :in_flight_exit_get_data, Watcher.new(), payload)
@@ -395,42 +351,41 @@ defmodule InFlightExitsTests do
     %{address: bob_address, pkey: bob_pkey} = bob_state = state["Bob"]
     # Bob sends a transaction spending Alices outputs
     # inputs
-    bob_input = %ExPlasma.Utxo{
-      blknum: alice_transaction_submit.blknum,
-      currency: Currency.ether(),
-      oindex: 1,
-      txindex: alice_transaction_submit.txindex,
-      output_type: 1,
-      owner: bob_address
-    }
-
-    # outputs
-    alice_output1 = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: Currency.to_wei(2)
-    }
-
-    alice_output2 = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: Currency.to_wei(3)
-    }
-
-    bob_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: bob_address,
-      amount: Currency.to_wei(10) - state["fee"]
-    }
-
-    transaction = %Payment{inputs: [bob_input], outputs: [alice_output1, alice_output2, bob_output]}
-
-    submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [bob_pkey]
+    {:ok, submitted_tx} =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(
+        blknum: alice_transaction_submit.blknum,
+        txindex: alice_transaction_submit.tx_index,
+        oindex: 1
       )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(alice_address),
+          token: Currency.ether(),
+          amount: Currency.to_wei(2)
+        }
+      )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(alice_address),
+          token: Currency.ether(),
+          amount: Currency.to_wei(3)
+        }
+      )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(bob_address),
+          token: Currency.ether(),
+          amount: Currency.to_wei(10) - state["fee"]
+        }
+      )
+      |> ExPlasma.Builder.sign([bob_pkey])
 
-    txbytes = ExPlasma.Transaction.encode(submitted_tx)
+    {:ok, txbytes} = ExPlasma.encode(submitted_tx)
 
     submit_transaction_response = send_transaction(txbytes)
 
@@ -595,6 +550,7 @@ defmodule InFlightExitsTests do
     payload = %InFlightExitTxBytesBodySchema{txbytes: Encoding.to_hex(bob_unsigned_txbytes)}
 
     response = pull_api_until_successful(InFlightExit, :in_flight_exit_get_competitor, Watcher.new(), payload)
+
     ife_competitor = IfeCompetitor.to_struct(response)
 
     assert ife_competitor.competing_tx_pos > 0
@@ -697,37 +653,31 @@ defmodule InFlightExitsTests do
     # inputs
     bob_deposit_utxo = hd(bob_utxos)
 
-    bob_input = %ExPlasma.Utxo{
-      blknum: bob_deposit_utxo["blknum"],
-      currency: Currency.ether(),
-      oindex: 0,
-      txindex: 0,
-      output_type: 1,
-      owner: bob_address
-    }
-
-    alice_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: alice_address,
-      amount: amount
-    }
-
-    bob_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: bob_address,
-      amount: bob_child_chain_balance - amount - state["fee"]
-    }
-
-    transaction = %Payment{inputs: [bob_input], outputs: [alice_output, bob_output]}
-
-    submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [bob_pkey]
+    {:ok, txbytes} =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(blknum: bob_deposit_utxo["blknum"], txindex: 0, oindex: 0)
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(alice_address),
+          token: Currency.ether(),
+          amount: amount
+        }
       )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(bob_address),
+          token: Currency.ether(),
+          amount: bob_child_chain_balance - amount - state["fee"]
+        }
+      )
+      |> ExPlasma.Builder.sign([bob_pkey])
 
-    txbytes = ExPlasma.Transaction.encode(submitted_tx)
+    {:ok, tyxbytes_encoded} = ExPlasma.encode(txbytes)
 
-    _submit_transaction_response = send_transaction(txbytes)
+    _submit_transaction_response = send_transaction(tyxbytes_encoded)
 
     {:ok, state}
   end
@@ -765,37 +715,30 @@ defmodule InFlightExitsTests do
 
     assert double_spent_utxo["amount"] == amount
 
-    alice_deposit_input = %ExPlasma.Utxo{
-      blknum: double_spent_utxo["blknum"],
-      currency: double_spent_utxo["currency"],
-      oindex: double_spent_utxo["oindex"],
-      txindex: double_spent_utxo["txindex"],
-      output_type: double_spent_utxo["otype"],
-      owner: double_spent_utxo["owner"]
-    }
-
-    bob_output = %ExPlasma.Utxo{
-      currency: Currency.ether(),
-      owner: bob_address,
-      amount: amount - state["fee"]
-    }
-
-    transaction = %Payment{inputs: [alice_deposit_input], outputs: [bob_output]}
-
-    submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: [alice_pkey]
+    txn =
+      ExPlasma.payment_v1()
+      |> ExPlasma.Builder.new()
+      |> ExPlasma.Builder.add_input(
+        blknum: double_spent_utxo["blknum"],
+        txindex: double_spent_utxo["txindex"],
+        oindex: double_spent_utxo["oindex"]
+      )
+      |> ExPlasma.Builder.add_output(
+        output_type: 1,
+        output_data: %{
+          output_guard: ExPlasma.Encoding.to_binary!(bob_address),
+          token: Currency.ether(),
+          amount: amount - state["fee"]
+        }
       )
 
-    txbytes = ExPlasma.Transaction.encode(submitted_tx)
+    {:ok, submitted_tx} = ExPlasma.Builder.sign(txn, [alice_pkey])
+    {:ok, txbytes} = ExPlasma.encode(submitted_tx)
 
     ## we need to duplicate the transaction because we need an unsigned one later!
-    unsigned_submitted_tx =
-      ExPlasma.Transaction.sign(transaction,
-        keys: []
-      )
+    unsigned_submitted_tx = txn
 
-    unsigned_txbytes = ExPlasma.Transaction.encode(unsigned_submitted_tx)
+    {:ok, unsigned_txbytes} = ExPlasma.encode(unsigned_submitted_tx, signed: false)
 
     alice_state =
       alice_state
@@ -919,7 +862,7 @@ defmodule InFlightExitsTests do
          state do
     %{address: address, transaction_submit: submit_response, child_chain_balance: balance} = state[entity]
     piggybacked_output_index = 0
-    %SubmitTransactionResponse{blknum: output_blknum, txindex: output_txindex} = submit_response
+    %SubmitTransactionResponse{blknum: output_blknum, tx_index: output_txindex} = submit_response
 
     pull_balance_until_amount(address, balance - Currency.to_wei(5) - state["fee"])
 
@@ -948,7 +891,7 @@ defmodule InFlightExitsTests do
     %{address: address, txbytes: txbytes} = state[entity]
 
     {:ok, %ExPlasma.Transaction{inputs: [input]}} = ExPlasma.Transaction.decode(txbytes)
-    input_pos = ExPlasma.Utxo.pos(input)
+    input_pos = ExPlasma.Output.Position.pos(input.output_id)
 
     assert Itest.Poller.exitable_utxo_absent?(address, input_pos)
   end
@@ -1001,10 +944,13 @@ defmodule InFlightExitsTests do
     # 2 means we're processing up to 2 exits, since this test starts exactly 2 exits now
     # we can't make precise claims on which exit is at the top, since this might change depending on the setup
     # the important part is that there is an assertion that those exits got processed
+    "0x" <> rest_address = address
+    sender_data = rest_address |> Base.decode16!(case: :lower) |> hash()
+
     data =
       ABI.encode(
-        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256)",
-        [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether(), 0, 2]
+        "processExits(uint256,address,#{Itest.Configuration.exit_id_type()},uint256,bytes32)",
+        [Itest.PlasmaFramework.vault_id(Currency.ether()), Currency.ether(), 0, 2, sender_data]
       )
 
     txmap = %{
@@ -1062,17 +1008,20 @@ defmodule InFlightExitsTests do
       })
 
     # result is in seconds
-    result
-    |> Encoding.to_binary()
-    |> ABI.TypeDecoder.decode([{:uint, 160}])
-    |> hd()
-    # to milliseconds
-    |> Kernel.*(1000)
-    # needs a be a tiny more than exit period seconds
-    |> Kernel.+(1000)
-    # twice the amount of min exit period for for a freshly submitted utxo IFE
-    |> Kernel.*(2)
-    |> Process.sleep()
+    sleep =
+      result
+      |> Encoding.to_binary()
+      |> ABI.TypeDecoder.decode([{:uint, 160}])
+      |> hd()
+      # to milliseconds
+      |> Kernel.*(1000)
+      # needs a be a tiny more than exit period seconds
+      |> Kernel.+(1000)
+      # twice the amount of min exit period for for a freshly submitted utxo IFE
+      |> Kernel.*(2)
+
+    _ = Logger.info("Wait for #{sleep}.")
+    Process.sleep(sleep)
   end
 
   defp challenge_in_flight_exit_not_canonical(exit_game_contract_address, address, ife_competitor) do
@@ -1081,7 +1030,7 @@ defmodule InFlightExitsTests do
        Encoding.to_binary(ife_competitor.in_flight_txbytes), ife_competitor.in_flight_input_index,
        Encoding.to_binary(ife_competitor.competing_txbytes), ife_competitor.competing_input_index,
        ife_competitor.competing_tx_pos, Encoding.to_binary(ife_competitor.competing_proof),
-       Encoding.to_binary(ife_competitor.competing_sig)}
+       Encoding.to_binary(ife_competitor.challenge_tx_sig)}
     ]
 
     data =
@@ -1224,7 +1173,7 @@ defmodule InFlightExitsTests do
     ife_exit_id =
       result
       |> Encoding.to_binary()
-      |> ABI.TypeDecoder.decode([{:uint, 128}])
+      |> ABI.TypeDecoder.decode([{:uint, 168}])
       |> hd()
 
     _ = Logger.warn("IFE id is #{ife_exit_id}")
@@ -1233,7 +1182,7 @@ defmodule InFlightExitsTests do
   end
 
   defp get_in_flight_exits(exit_game_contract_address, ife_exit_id) do
-    _ = Logger.info("Get in flight exits...")
+    _ = Logger.info("Get in flight exits for #{ife_exit_id}...")
     signature = "inFlightExits(#{Itest.Configuration.exit_id_type()}[])"
     data = ABI.encode(signature, [[ife_exit_id]])
 
@@ -1248,13 +1197,15 @@ defmodule InFlightExitsTests do
     <<method_id::binary-size(4), _::binary>> = elem(ExKeccak.hash_256(signature), 1)
     enriched_data = method_id |> Encoding.to_hex() |> Kernel.<>(data) |> Encoding.to_binary()
 
-    {_function_spec, data} = ABI.find_and_decode([in_flight_exits()], enriched_data)
+    data = ABI.decode(in_flight_exits(), enriched_data, :output)
 
     return_fields = [
       :is_canonical,
       :exit_start_timestamp,
       :exit_map,
       :position,
+      :withdraw_data_inputs,
+      :withdraw_data_outputs,
       :bond_owner,
       :bond_size,
       :oldest_competitor_position
@@ -1389,31 +1340,80 @@ defmodule InFlightExitsTests do
     end
   end
 
-  def in_flight_exits() do
+  defp in_flight_exits() do
     %ABI.FunctionSelector{
       function: "inFlightExits",
-      input_names: ["in_flight_exit_structs"],
+      input_names: ["exitIds"],
       inputs_indexed: nil,
-      method_id: <<206, 201, 225, 167>>,
-      # returns: [
-      #   array: {:tuple,
-      #           [
-      #             :bool,
-      #             {:uint, 64},
-      #             {:uint, 256},
-      #             {:uint, 256},
-      #             {:array, :tuple, 4},
-      #             {:array, :tuple, 4},
-      #             :address,
-      #             {:uint, 256},
-      #             {:uint, 256}
-      #           ]}
-      # ],
+      method_id: <<85, 220, 82, 55>>,
+      returns: [
+        array:
+          {:tuple,
+           [
+             :bool,
+             {:uint, 64},
+             {:uint, 256},
+             {:uint, 256},
+             {:array,
+              {:tuple,
+               [
+                 {:bytes, 32},
+                 :address,
+                 :address,
+                 {:uint, 256},
+                 {:uint, 256},
+                 {:uint, 256}
+               ]}, 4},
+             {:array,
+              {:tuple,
+               [
+                 {:bytes, 32},
+                 :address,
+                 :address,
+                 {:uint, 256},
+                 {:uint, 256},
+                 {:uint, 256}
+               ]}, 4},
+             :address,
+             {:uint, 256},
+             {:uint, 256}
+           ]}
+      ],
       type: :function,
-      # types: [array: {:uint, 160}]
-      types: [
-        {:array, {:tuple, [:bool, {:uint, 64}, {:uint, 256}, {:uint, 256}, :address, {:uint, 256}, {:uint, 256}]}}
-      ]
+      types: [array: {:uint, 168}]
+      # types: [
+      #   array:
+      #     {:tuple,
+      #      [
+      #        :bool,
+      #        {:uint, 64},
+      #        {:uint, 256},
+      #        {:uint, 256},
+      #        {:array,
+      #         {:tuple,
+      #          [
+      #            {:bytes, 32},
+      #            :address,
+      #            :address,
+      #            {:uint, 256},
+      #            {:uint, 256},
+      #            {:uint, 256}
+      #          ]}, 4},
+      #        {:array,
+      #         {:tuple,
+      #          [
+      #            {:bytes, 32},
+      #            :address,
+      #            :address,
+      #            {:uint, 256},
+      #            {:uint, 256},
+      #            {:uint, 256}
+      #          ]}, 4},
+      #        :address,
+      #        {:uint, 256},
+      #        {:uint, 256}
+      #      ]}
+      # ]
     }
   end
 end

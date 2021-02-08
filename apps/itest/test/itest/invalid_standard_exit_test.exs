@@ -51,7 +51,9 @@ defmodule InvalidStandardExitsTests do
     {:ok, receipt_hash} = Client.deposit(expecting_amount, alice_account, Itest.PlasmaFramework.vault(Currency.ether()))
     gas_used = Client.get_gas_used(receipt_hash)
 
+    _ = Logger.info("Expecting balance on Watcher Info.")
     %{"amount" => ^expecting_amount} = Client.get_exact_balance(alice_account, expecting_amount)
+    _ = Logger.info("Got exact balance on Watcher Info - #{expecting_amount}.")
 
     new_state =
       state
@@ -84,7 +86,6 @@ defmodule InvalidStandardExitsTests do
       )
 
     # pattern match just to check success, since this is what `Client` returns to us
-    # TODO: improve with an `{:ok, ...}` perhaps?
     %Itest.ApiModel.SubmitTransactionResponse{blknum: _} =
       Client.submit_transaction(typed_data, sign_hash, [carol_pkey])
 
@@ -115,7 +116,7 @@ defmodule InvalidStandardExitsTests do
 
     # get a public-API response that contains exactly the UTXO that alice just spent, for later exiting
     %{"message" => %{"input0" => %{"blknum" => blknum, "oindex" => oindex, "txindex" => txindex}}} = typed_data
-    alice_recently_spent_utxo_pos = ExPlasma.Utxo.pos(%{blknum: blknum, oindex: oindex, txindex: txindex})
+    alice_recently_spent_utxo_pos = ExPlasma.Output.Position.pos(%{blknum: blknum, oindex: oindex, txindex: txindex})
     alice_recently_spent_utxo_pos = get_particular_utxo(alice_account, alice_recently_spent_utxo_pos)
 
     %Itest.ApiModel.SubmitTransactionResponse{blknum: _} =

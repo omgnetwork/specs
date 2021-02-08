@@ -19,11 +19,11 @@ if Code.ensure_loaded?(ChildChainAPI.Connection) do
     @moduledoc """
     Handle Tesla connections for WatcherAPI.
     """
-
+    alias Itest.Configuration
     use Tesla
 
     # Add any middleware here (authentication)
-    plug(Tesla.Middleware.BaseUrl, "http://localhost:9656")
+    plug(Tesla.Middleware.BaseUrl, Configuration.child_chain_url())
     plug(Tesla.Middleware.Headers, [{"user-agent", "Itest-Elixir"}, {"Content-Type", "application/json"}])
     plug(Tesla.Middleware.EncodeJson, engine: Poison)
 

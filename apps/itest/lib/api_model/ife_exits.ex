@@ -22,6 +22,8 @@ defmodule Itest.ApiModel.IfeExits do
     :exit_start_timestamp,
     :exit_map,
     :position,
+    :withdraw_data_inputs,
+    :withdraw_data_outputs,
     :bond_owner,
     :bond_size,
     :oldest_competitor_position
@@ -32,6 +34,8 @@ defmodule Itest.ApiModel.IfeExits do
           exit_start_timestamp: non_neg_integer(),
           exit_map: non_neg_integer(),
           position: non_neg_integer(),
+          withdraw_data_inputs: list(),
+          withdraw_data_outputs: list(),
           bond_owner: binary(),
           bond_size: non_neg_integer(),
           oldest_competitor_position: non_neg_integer()

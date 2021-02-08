@@ -5,6 +5,8 @@ config :ethereumex,
   http_options: [timeout: 60_000, recv_timeout: 60_000]
 
 config :itest,
+  child_chain_url: System.get_env("CHILD_CHAIN_URL"),
+  fee_claimer_address: System.get_env("FEE_CLAIMER_ADDRESS"),
   exit_id_size: String.to_integer(System.get_env("EXIT_ID_SIZE") || "160"), # 168 contracts v2
   reorg: System.get_env("REORG"),
   localchain_contract_env_path:
