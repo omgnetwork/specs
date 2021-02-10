@@ -25,6 +25,7 @@ defmodule DebugEvents do
     vault_ether_address = Currency.ether() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
     vault_erc20_address = Currency.erc20() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
     exit_game_contract_address = Itest.PlasmaFramework.exit_game_contract_address(ExPlasma.payment_v1())
+    Process.flag(:trap_exit, true)
 
     Itest.ContractEvent.start_link(
       ws_url: "ws://127.0.0.1:8546",
