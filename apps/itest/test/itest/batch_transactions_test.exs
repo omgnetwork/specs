@@ -18,15 +18,16 @@ defmodule BatchTransactionsTests do
 
   require Logger
 
-  alias ExPlasma.Transaction.Payment
-  alias Itest.Account
-  alias ChildChainAPI.Model.TransactionBatchSubmitBodySchema
-  alias Itest.Transactions.Encoding
   alias ChildChainAPI.Api.Transaction
   alias ChildChainAPI.Connection, as: ChildChain
+  alias ChildChainAPI.Model.TransactionBatchSubmitBodySchema
+  alias ExPlasma.Transaction.Payment
+  alias Itest.Account
+  alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
   alias Itest.Client
   alias Itest.Fee
   alias Itest.Transactions.Currency
+  alias Itest.Transactions.Encoding
 
   import Itest.Poller,
     only: [
@@ -40,7 +41,7 @@ defmodule BatchTransactionsTests do
   setup do
     {:ok, _} = DebugEvents.start_link()
 
-    [{alice_address, alice_pkey}, {bob_address, bob_pkey}] = Account.take_accounts(2)
+    [{alice_address, alice_pkey}, {bob_address, bob_pkey}, {eve_address, eve_pkey}] = Account.take_accounts(3)
 
     eth_fee =
       Currency.ether()
@@ -77,141 +78,190 @@ defmodule BatchTransactionsTests do
         receipt_hashes: [],
         in_flight_exit_id: nil,
         in_flight_exit: nil
+      },
+      "Eve" => %{
+        address: eve_address,
+        pkey: "0x" <> eve_pkey,
+        gas: 0,
+        ethereum_balance: 0,
+        ethereum_initial_balance: 0,
+        child_chain_balance: 0,
+        utxos: [],
+        exit_data: nil,
+        transaction_submit: nil,
+        receipt_hashes: [],
+        in_flight_exit_id: nil,
+        in_flight_exit: nil
       }
     }
   end
 
-  defwhen ~r/^Alice deposits "(?<amount>[^"]+)" ETH to the root chain$/,
+  defwhen ~r/^they deposit "(?<amount>[^"]+)" ETH to the root chain$/,
           %{amount: amount},
           state do
-    entity = "Alice"
-    %{address: address} = entity_state = state[entity]
-    initial_balance = Itest.Poller.root_chain_get_balance(address)
+    entity_1 = "Alice"
+    entity_2 = "Bob"
+    entity_3 = "Eve"
 
-    {:ok, receipt_hash} =
-      amount
-      |> Currency.to_wei()
-      |> Client.deposit(address, Itest.PlasmaFramework.vault(Currency.ether()))
+    new_state =
+      Enum.reduce([entity_1, entity_2, entity_3], state, fn entity, state_acc ->
+        %{address: address} = entity_state = state_acc[entity]
+        initial_balance = Itest.Poller.root_chain_get_balance(address)
 
-    geth_block_every = 1
+        {:ok, receipt_hash} =
+          amount
+          |> Currency.to_wei()
+          |> Client.deposit(address, Itest.PlasmaFramework.vault(Currency.ether()))
 
-    {:ok, response} =
-      WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
+        geth_block_every = 1
 
-    watcher_security_critical_config =
-      WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
+        {:ok, response} =
+          WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
 
-    finality_margin_blocks = watcher_security_critical_config.deposit_finality_margin
-    to_miliseconds = 1000
+        watcher_security_critical_config =
+          WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
 
-    finality_margin_blocks
-    |> Kernel.*(geth_block_every)
-    |> Kernel.*(to_miliseconds)
-    |> Kernel.round()
-    |> Process.sleep()
+        finality_margin_blocks = watcher_security_critical_config.deposit_finality_margin
+        to_miliseconds = 1000
 
-    balance_after_deposit = Itest.Poller.root_chain_get_balance(address)
-    deposited_amount = initial_balance - balance_after_deposit
+        finality_margin_blocks
+        |> Kernel.*(geth_block_every)
+        |> Kernel.*(to_miliseconds)
+        # for good measure so that we avoid any kind of race conditions
+        # blocks are very fast locally (1second)
+        |> Kernel.+(2000)
+        |> Kernel.round()
+        |> Process.sleep()
 
-    entity_state =
-      entity_state
-      |> Map.put(:ethereum_balance, balance_after_deposit)
-      |> Map.put(:ethereum_initial_balance, initial_balance)
-      |> Map.put(:last_deposited_amount, deposited_amount)
-      |> Map.put(:receipt_hashes, [receipt_hash | entity_state.receipt_hashes])
+        balance_after_deposit = Itest.Poller.root_chain_get_balance(address)
+        deposited_amount = initial_balance - balance_after_deposit
 
-    {:ok, Map.put(state, entity, entity_state)}
+        entity_state =
+          entity_state
+          |> Map.put(:ethereum_balance, balance_after_deposit)
+          |> Map.put(:ethereum_initial_balance, initial_balance)
+          |> Map.put(:last_deposited_amount, deposited_amount)
+          |> Map.put(:receipt_hashes, [receipt_hash | entity_state.receipt_hashes])
+
+        Map.put(state_acc, entity, entity_state)
+      end)
+
+    {:ok, new_state}
   end
 
-  defthen ~r/^Alice should have "(?<amount>[^"]+)" ETH on the child chain after finality margin$/,
+  defthen ~r/^they should have "(?<amount>[^"]+)" ETH on the child chain after finality margin$/,
           %{amount: amount},
           state do
-    entity = "Alice"
-    %{address: address} = entity_state = state[entity]
-    _ = Logger.info("#{entity} should have #{amount} ETH on the child chain after finality margin")
+    entity_1 = "Alice"
+    entity_2 = "Bob"
+    entity_3 = "Eve"
 
-    child_chain_balance =
-      case amount do
-        "0" ->
-          assert Client.get_exact_balance(address, Currency.to_wei(amount)) == []
-          0
+    new_state =
+      Enum.reduce([entity_1, entity_2, entity_3], state, fn entity, state_acc ->
+        %{address: address} = entity_state = state_acc[entity]
+        _ = Logger.info("#{entity} should have #{amount} ETH on the child chain after finality margin")
 
-        _ ->
-          %{"amount" => network_amount} = Client.get_exact_balance(address, Currency.to_wei(amount))
-          assert network_amount == Currency.to_wei(amount)
-          network_amount
-      end
+        child_chain_balance =
+          case amount do
+            "0" ->
+              assert Client.get_exact_balance(address, Currency.to_wei(amount)) == []
+              0
 
-    blknum = capture_blknum_from_event(address, amount)
+            _ ->
+              %{"amount" => network_amount} = Client.get_exact_balance(address, Currency.to_wei(amount))
+              assert network_amount == Currency.to_wei(amount)
+              network_amount
+          end
 
-    all_utxos =
-      pull_for_utxo_until_recognized_deposit(
-        address,
-        Currency.to_wei(amount),
-        Encoding.to_hex(Currency.ether()),
-        blknum
-      )
+        blknum = capture_blknum_from_event(address, amount)
 
-    balance = Itest.Poller.root_chain_get_balance(address)
+        all_utxos =
+          pull_for_utxo_until_recognized_deposit(
+            address,
+            Currency.to_wei(amount),
+            Encoding.to_hex(Currency.ether()),
+            blknum
+          )
 
-    entity_state =
-      entity_state
-      |> Map.put(:ethereum_balance, balance)
-      |> Map.put(:utxos, all_utxos["data"])
-      |> Map.put(:child_chain_balance, child_chain_balance)
+        balance = Itest.Poller.root_chain_get_balance(address)
 
-    {:ok, Map.put(state, entity, entity_state)}
+        entity_state =
+          entity_state
+          |> Map.put(:ethereum_balance, balance)
+          |> Map.put(:utxos, all_utxos["data"])
+          |> Map.put(:child_chain_balance, child_chain_balance)
+
+        Map.put(state_acc, entity, entity_state)
+      end)
+
+    {:ok, new_state}
   end
 
-  defwhen ~r/^Alice sends Bob "(?<times>[^"]+)" batch transactions for "(?<amount>[^"]+)" ETH on the child chain$/,
-          %{times: times, amount: amount},
+  defwhen ~r/^they send each other batch transactions for "(?<amount>[^"]+)" WEI on the child chain$/,
+          %{amount: amount},
           state do
+    entity_1 = "Alice"
+    entity_2 = "Bob"
+    entity_3 = "Eve"
 
-    %{address: address, utxos: utxos} = entity_state = state["Alice"]
-
-    utxo = hd(utxos)
     batch =
-      1..String.to_integer(times)
-      |> Enum.map(fn _ ->
-        amount = 1
+      Enum.reduce([entity_1, entity_2, entity_3], [], fn entity, acc_batch ->
+        %{
+          address: entity_address,
+          pkey: entity_pkey,
+          utxos: [utxo | _],
+          child_chain_balance: entity_child_chain_balance
+        } = state[entity]
 
-        alice_input = %ExPlasma.Utxo{
-          blknum: utxo.blknum,
+        amount = String.to_integer(amount)
+
+        %{address: bob_address} = state["Bob"]
+
+        entity_input = %ExPlasma.Utxo{
+          blknum: utxo["blknum"],
           currency: Currency.ether(),
           oindex: 0,
-          txindex: utxo.txindex,
-          output_type: 1,
-          owner: address
+          txindex: utxo["txindex"],
+          output_type: 1
         }
 
         bob_output = %ExPlasma.Utxo{
           currency: Currency.ether(),
-          owner: alice_address,
-          amount: bob_child_chain_balance - amount - state.fee
+          owner: bob_address,
+          amount: amount
         }
 
-        transaction = %Payment{inputs: [bob_input], outputs: [alice_output, bob_output]}
+        entity_output = %ExPlasma.Utxo{
+          currency: Currency.ether(),
+          owner: entity_address,
+          amount: entity_child_chain_balance - 1 - state["fee"]
+        }
 
-        submitted_tx =
-          ExPlasma.Transaction.sign(transaction,
-            keys: [bob_pkey]
-          )
+        transaction = %Payment{inputs: [entity_input], outputs: [bob_output, entity_output]}
 
-        ExPlasma.Transaction.encode(submitted_tx)
+        submitted_tx = ExPlasma.Transaction.sign(transaction, keys: [entity_pkey])
+
+        [ExPlasma.Transaction.encode(submitted_tx) | acc_batch]
       end)
 
-    send_transactions(batch)
+    batch |> Enum.reverse() |> send_transactions()
     {:ok, state}
   end
 
-  defthen ~r/^"(?<entity>[^"]+)" should have "(?<amount>[^"]+)" ETH on the child chain$/,
+  defthen ~r/^"(?<entity>[^"]+)" should have "(?<amount>[^"]+)" WEI on the child chain$/,
           %{entity: entity, amount: amount},
           state do
-    expecting_amount = Currency.to_wei(amount)
-    balance = Client.get_exact_balance(alice_account, expecting_amount)
+    %{address: bob_address} = state[entity]
+    # bob has 10ETH
+    # gets 1 wei from alice
+    # gets 1 wei from eve
+    # send 1 transaction and pays 1 wei fee
+    expecting_amount = String.to_integer(amount)
+
+    balance = Client.get_exact_balance(bob_address, expecting_amount)
     balance = balance["amount"]
 
-    assert_equal(Currency.to_wei(amount), balance, "For #{alice_account} #{index}.")
+    assert_equal(expecting_amount, balance, "For #{bob_address}.")
   end
 
   # defthen ~r/^others should have "(?<amount>[^"]+)" ETH on the child chain$/,
@@ -241,41 +291,37 @@ defmodule BatchTransactionsTests do
     assert(left == right, "Expected #{left}, but have #{right}." <> message)
   end
 
-  # alice_output = %ExPlasma.Utxo{
-  #   currency: Currency.ether(),
-  #   owner: alice_address,
-  #   amount: amount
+  # %{
+  #   "data" => [
+  #     %{
+  #       "blknum" => 10000,
+  #       "txhash" => "0xcd84bd79e2c90aef071bc938dc5fa530f80b8bf712b1d44791bd1ccd33229b8f",
+  #       "txindex" => 0
+  #     },
+  #     %{
+  #       "blknum" => 10000,
+  #       "txhash" => "0xcb6233e6982a76f1d8065a456589a40b524a6c0af0525a1d94a0acd75e328b8a",
+  #       "txindex" => 1
+  #     },
+  #     %{
+  #       "blknum" => 10000,
+  #       "txhash" => "0xa80a353c5086da923e0570ca2664436da90f6c370e5d85a6cef456e485bc7283",
+  #       "txindex" => 2
+  #     }
+  #   ],
+  #   "service_name" => "child_chain",
+  #   "success" => true,
+  #   "version" => "1.0.3+d7da26d"
   # }
-
-  # bob_output = %ExPlasma.Utxo{
-  #   currency: Currency.ether(),
-  #   owner: bob_address,
-  #   amount: bob_child_chain_balance - amount - state["fee"]
-  # }
-
-  # transaction = %Payment{inputs: [bob_input], outputs: [alice_output, bob_output]}
-
-  # submitted_tx =
-  #   ExPlasma.Transaction.sign(transaction,
-  #     keys: [bob_pkey]
-  #   )
-
-  # txbytes = ExPlasma.Transaction.encode(submitted_tx)
-
-  # _submit_transaction_response = send_transaction(txbytes)
-
   defp send_transactions(transactions_bytes) do
     transactions_bytes = Enum.map(transactions_bytes, &Encoding.to_hex/1)
     batch_transaction_submit_body_schema = %TransactionBatchSubmitBodySchema{transactions: transactions_bytes}
-    {:ok, response} = Transaction.submit(ChildChain.new(), batch_transaction_submit_body_schema)
+    {:ok, _response} = Transaction.batch_submit(ChildChain.new(), batch_transaction_submit_body_schema)
 
-    response
-    |> Map.get(:body)
-    |> Jason.decode!()
-    |> Map.get("data")
-    |> IO.inspect(label: "TransactionBatchSubmit")
-
-    # |> SubmitTransactionResponse.to_struct()
+    # response
+    # |> Map.get(:body)
+    # |> Jason.decode!()
+    # |> Map.get("data")
   end
 
   defp capture_blknum_from_event(address, amount) do
