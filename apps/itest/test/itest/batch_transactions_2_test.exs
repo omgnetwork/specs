@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-defmodule BatchTransactionsTests do
+defmodule BatchTransactions2Tests do
   use Cabbage.Feature, async: true, file: "batch_transactions_2.feature"
   @moduletag :transactions
 
