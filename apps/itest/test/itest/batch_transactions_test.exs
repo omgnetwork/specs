@@ -26,17 +26,9 @@ defmodule BatchTransactionsTests do
   alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
   alias Itest.Client
   alias Itest.Fee
+  alias Itest.Poller
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
-
-  import Itest.Poller,
-    only: [
-      pull_for_utxo_until_recognized_deposit: 4,
-      pull_balance_until_amount: 2,
-      pull_api_until_successful: 4,
-      wait_on_receipt_confirmed: 1,
-      all_events_in_status?: 1
-    ]
 
   setup do
     {:ok, _} = DebugEvents.start_link()
@@ -59,11 +51,8 @@ defmodule BatchTransactionsTests do
         ethereum_initial_balance: 0,
         child_chain_balance: 0,
         utxos: [],
-        exit_data: nil,
         transaction_submit: nil,
-        receipt_hashes: [],
-        in_flight_exit_id: nil,
-        in_flight_exit: nil
+        receipt_hashes: []
       },
       "Bob" => %{
         address: bob_address,
@@ -73,11 +62,8 @@ defmodule BatchTransactionsTests do
         ethereum_initial_balance: 0,
         child_chain_balance: 0,
         utxos: [],
-        exit_data: nil,
         transaction_submit: nil,
-        receipt_hashes: [],
-        in_flight_exit_id: nil,
-        in_flight_exit: nil
+        receipt_hashes: []
       },
       "Eve" => %{
         address: eve_address,
@@ -87,11 +73,8 @@ defmodule BatchTransactionsTests do
         ethereum_initial_balance: 0,
         child_chain_balance: 0,
         utxos: [],
-        exit_data: nil,
         transaction_submit: nil,
-        receipt_hashes: [],
-        in_flight_exit_id: nil,
-        in_flight_exit: nil
+        receipt_hashes: []
       }
     }
   end
@@ -103,36 +86,45 @@ defmodule BatchTransactionsTests do
     entity_2 = "Bob"
     entity_3 = "Eve"
 
-    new_state =
-      Enum.reduce([entity_1, entity_2, entity_3], state, fn entity, state_acc ->
-        %{address: address} = entity_state = state_acc[entity]
-        initial_balance = Itest.Poller.root_chain_get_balance(address)
+    receipts =
+      Enum.map([entity_1, entity_2, entity_3], fn entity ->
+        %{address: address} = state[entity]
 
         {:ok, receipt_hash} =
           amount
           |> Currency.to_wei()
           |> Client.deposit(address, Itest.PlasmaFramework.vault(Currency.ether()))
 
-        geth_block_every = 1
+        receipt_hash
+      end)
 
-        {:ok, response} =
-          WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
+    # lets wait for the three deposits to be recognized
+    geth_block_every = 1
 
-        watcher_security_critical_config =
-          WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
+    {:ok, response} =
+      WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
 
-        finality_margin_blocks = watcher_security_critical_config.deposit_finality_margin
-        to_miliseconds = 1000
+    watcher_security_critical_config =
+      WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
 
-        finality_margin_blocks
-        |> Kernel.*(geth_block_every)
-        |> Kernel.*(to_miliseconds)
-        # for good measure so that we avoid any kind of race conditions
-        # blocks are very fast locally (1second)
-        |> Kernel.+(2000)
-        |> Kernel.round()
-        |> Process.sleep()
+    finality_margin_blocks = watcher_security_critical_config.deposit_finality_margin
+    to_miliseconds = 1000
 
+    finality_margin_blocks
+    |> Kernel.*(geth_block_every)
+    |> Kernel.*(to_miliseconds)
+    # for good measure so that we avoid any kind of race conditions
+    # blocks are very fast locally (1second)
+    |> Kernel.+(2000)
+    |> Kernel.round()
+    |> Process.sleep()
+
+    new_state =
+      [entity_1, entity_2, entity_3]
+      |> Enum.zip(receipts)
+      |> Enum.reduce(state, fn {entity, receipt_hash}, state_acc ->
+        %{address: address} = entity_state = state_acc[entity]
+        initial_balance = Itest.Poller.root_chain_get_balance(address)
         balance_after_deposit = Itest.Poller.root_chain_get_balance(address)
         deposited_amount = initial_balance - balance_after_deposit
 
@@ -176,7 +168,7 @@ defmodule BatchTransactionsTests do
         blknum = capture_blknum_from_event(address, amount)
 
         all_utxos =
-          pull_for_utxo_until_recognized_deposit(
+          Poller.pull_for_utxo_until_recognized_deposit(
             address,
             Currency.to_wei(amount),
             Encoding.to_hex(Currency.ether()),
@@ -264,29 +256,6 @@ defmodule BatchTransactionsTests do
     assert_equal(expecting_amount, balance, "For #{bob_address}.")
   end
 
-  # defthen ~r/^others should have "(?<amount>[^"]+)" ETH on the child chain$/,
-  #         %{amount: amount},
-  #         %{bobs: bobs} = state do
-  #   bobs
-  #   |> Enum.with_index()
-  #   |> Task.async_stream(
-  #     fn {{bob_account, _}, index} ->
-  #       expecting_amount = Currency.to_wei(amount)
-
-  #       balance = Client.get_exact_balance(bob_account, expecting_amount)
-  #       balance = balance["amount"]
-
-  #       assert_equal(expecting_amount, balance, "For #{bob_account} #{index}.")
-  #     end,
-  #     timeout: 240_000,
-  #     on_timeout: :kill_task,
-  #     max_concurrency: @num_accounts
-  #   )
-  #   |> Enum.map(fn {:ok, result} -> result end)
-
-  #   {:ok, state}
-  # end
-
   defp assert_equal(left, right, message) do
     assert(left == right, "Expected #{left}, but have #{right}." <> message)
   end
@@ -316,12 +285,15 @@ defmodule BatchTransactionsTests do
   defp send_transactions(transactions_bytes) do
     transactions_bytes = Enum.map(transactions_bytes, &Encoding.to_hex/1)
     batch_transaction_submit_body_schema = %TransactionBatchSubmitBodySchema{transactions: transactions_bytes}
-    {:ok, _response} = Transaction.batch_submit(ChildChain.new(), batch_transaction_submit_body_schema)
+    {:ok, response} = Transaction.batch_submit(ChildChain.new(), batch_transaction_submit_body_schema)
 
-    # response
-    # |> Map.get(:body)
-    # |> Jason.decode!()
-    # |> Map.get("data")
+    data =
+      response
+      |> Map.get(:body)
+      |> Jason.decode!()
+      |> Map.get("data")
+
+    Logger.info("#{inspect(data)}")
   end
 
   defp capture_blknum_from_event(address, amount) do
