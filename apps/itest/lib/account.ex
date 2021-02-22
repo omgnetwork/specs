@@ -99,7 +99,7 @@ defmodule Itest.Account do
     if Application.get_env(:itest, :reorg) do
       Reorg.create_account_from_secret(secret, passphrase)
     else
-      Ethereumex.HttpClient.request([secret, passphrase], [])
+      Ethereumex.HttpClient.request("personal_importRawKey", [secret, passphrase], [])
     end
   end
 
