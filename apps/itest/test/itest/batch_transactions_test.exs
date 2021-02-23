@@ -236,6 +236,8 @@ defmodule BatchTransactionsTests do
         [ExPlasma.Transaction.encode(submitted_tx) | acc_batch]
       end)
 
+    # lets wait additional time for the deposits to be recognized
+    Process.sleep(2000)
     batch |> Enum.reverse() |> send_transactions()
     {:ok, state}
   end
@@ -294,6 +296,7 @@ defmodule BatchTransactionsTests do
       |> Map.get("data")
 
     Logger.info("#{inspect(data)}")
+    [%{"txindex" => 0}, %{"txindex" => 1}, %{"txindex" => 2}] = data
   end
 
   defp capture_blknum_from_event(address, amount) do

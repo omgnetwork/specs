@@ -286,6 +286,8 @@ defmodule BatchTransactions2Tests do
       end)
 
     old_batch = state["batch"]
+    # lets wait additional time for the deposits to be recognized
+    Process.sleep(2000)
 
     {:ok,
      state
@@ -339,7 +341,8 @@ defmodule BatchTransactions2Tests do
       |> Map.get("data")
 
     Logger.info("#{inspect(data)}")
-    data
+
+    [%{"txindex" => 0}, %{"txindex" => 1}, %{"error" => "utxo_not_found"}] = data
   end
 
   defp capture_blknum_from_event(address, amount) do
