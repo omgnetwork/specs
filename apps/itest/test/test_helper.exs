@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+ExUnit.configure(formatters: [JUnitFormatter, ExUnit.CLIFormatter])
 
 Logger.configure_backend(:console, colors: [enabled: false])
 require Logger
