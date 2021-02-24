@@ -38,7 +38,8 @@ defmodule Itest.MixProject do
       {:poison, "~> 3.0"},
       {:tesla, "~> 1.3"},
       {:hackney, "~> 1.15.2"},
-      {:cabbage, "~> 0.3.0"}
+      {:cabbage, "~> 0.3.0"},
+      {:junit_formatter, "~> 3.1", only: [:test]}
     ]
   end
 end

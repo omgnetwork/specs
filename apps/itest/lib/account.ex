@@ -92,10 +92,31 @@ defmodule Itest.Account do
   end
 
   defp create_account_from_secret(secret, passphrase) do
+    create_account_from_secret(secret, passphrase, 10)
+  end
+
+  defp create_account_from_secret(secret, passphrase, 0) do
     if Application.get_env(:itest, :reorg) do
       Reorg.create_account_from_secret(secret, passphrase)
     else
       Ethereumex.HttpClient.request("personal_importRawKey", [secret, passphrase], [])
+    end
+  end
+
+  defp create_account_from_secret(secret, passphrase, counter) do
+    if Application.get_env(:itest, :reorg) do
+      Reorg.create_account_from_secret(secret, passphrase)
+    else
+      "personal_importRawKey"
+      |> Ethereumex.HttpClient.request([secret, passphrase], [])
+      |> case do
+        {:error, _} ->
+          Process.sleep(500)
+          create_account_from_secret(secret, passphrase, counter - 1)
+
+        result ->
+          result
+      end
     end
   end
 end

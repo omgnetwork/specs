@@ -21,18 +21,12 @@ defmodule AbiEvents do
     abi_path
     |> File.ls!()
     |> Enum.map(fn file ->
-      try do
-        [abi_path, file]
-        |> Path.join()
-        |> File.read!()
-        |> Jason.decode!()
-        |> Map.fetch!("abi")
-        |> ABI.parse_specification(include_events?: true)
-      rescue
-        x in [MatchError, RuntimeError] ->
-          _ = Logger.warn("couldn't parse! #{file} because of #{inspect(x)}")
-          []
-      end
+      [abi_path, file]
+      |> Path.join()
+      |> File.read!()
+      |> Jason.decode!()
+      |> Map.fetch!("abi")
+      |> ABI.parse_specification(include_events?: true)
     end)
     |> List.flatten()
     |> Enum.filter(fn fs -> fs.type == :event end)
