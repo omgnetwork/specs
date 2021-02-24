@@ -4,13 +4,13 @@ info:
   title: Watcher security-critical API
   description: |
     API specification of the Watcher's security-critical Service
-    Error codes are available in [html](https://github.com/omisego/elixir-omg/blob/master/docs/api_specs/errors.md#error-codes-description) format.
+    Error codes are available in [html](https://github.com/omgnetwork/elixir-omg/blob/master/docs/api_specs/errors.md#error-codes-description) format.
   contact:
-    name: OmiseGO
-    email: omisego@omisego.co
+    name: OMG Network
+    email: engineering@omg.network
   license:
     name: 'Apache 2.0: https://www.apache.org/licenses/LICENSE-2.0'
-    url: 'https://omisego.network/'
+    url: 'https://omg.network/'
 servers:
   - url: 'https://watcher.ropsten.v1.omg.network/'
   - url: 'http://localhost:7434/'
@@ -19,9 +19,11 @@ tags:
     description: Status of the child chain.
     externalDocs:
       description: Byzantine events description
-      url: 'https://github.com/omisego/elixir-omg/blob/master/docs/api_specs/status_events_specs.md#byzantine-events'
+      url: 'https://github.com/omgnetwork/elixir-omg/blob/master/docs/api_specs/status_events_specs.md#byzantine-events'
   - name: Account
     description: Account related API.
+  - name: Block
+    description: Block-related API
   - name: UTXO
     description: UTXO related API.
   - name: Transaction
@@ -907,6 +909,140 @@ paths:
                         description: Something went wrong on the server
                         messages:
                           error_key: error_reason
+  /block.validate:
+    post:
+      tags:
+        - Block
+      summary: Verifies the stateless validity of a block.
+      description: |
+        - Verifies that given Merkle root matches reconstructed Merkle root.
+        - Verifies that (payment and fee) transactions  are correctly formed.
+        - Verifies that there are no duplicate inputs at the block level.
+        - Verifies that the number of transactions falls within the accepted range.
+        - Verifies that fee transactions are correctly placed and unique per currency.
+      operationId: validate
+      requestBody:
+        description: 'Block object with a hash, number and array of hexadecimal transaction bytes.'
+        required: true
+        content:
+          application/json:
+            schema:
+              title: BlockValidateBodySchema
+              type: object
+              properties:
+                hash:
+                  type: string
+                transactions:
+                  type: array
+                  items:
+                    type: string
+                number:
+                  type: integer
+              required:
+                - hash
+                - transactions
+                - number
+              example:
+                number: 1000
+                hash: 0xf8d083015ba98080808080940000...
+                transactions:
+                  - 0xf8c0f843b841fc6dbf49a4baa783ec576291f6083be5ea...
+                  - 0xf852c003eeed02eb94916f3753bd53e124d6d565ef1701...
+      responses:
+        '200':
+          description: Successful response to calling /block.validate
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - description: The response schema for a successful operation
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      success:
+                        type: boolean
+                      data:
+                        type: object
+                      service_name:
+                        type: string
+                    required:
+                      - service_name
+                      - version
+                      - success
+                      - data
+                    example:
+                      service_name: watcher
+                      version: 1.0.0+abcdefa
+                      success: true
+                      data: {}
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          valid:
+                            type: boolean
+                    example:
+                      data:
+                        valid: false
+        '500':
+          description: Returns an internal server error
+          content:
+            application/json:
+              schema:
+                description: The response schema for an error
+                allOf:
+                  - description: The response schema for a successful operation
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      success:
+                        type: boolean
+                      data:
+                        type: object
+                      service_name:
+                        type: string
+                    required:
+                      - service_name
+                      - version
+                      - success
+                      - data
+                    example:
+                      service_name: watcher
+                      version: 1.0.0+abcdefa
+                      success: true
+                      data: {}
+                  - type: object
+                    properties:
+                      data:
+                        description: The object schema for an error
+                        type: object
+                        properties:
+                          object:
+                            type: string
+                          code:
+                            type: string
+                          description:
+                            type: string
+                          messages:
+                            type: object
+                        required:
+                          - object
+                          - code
+                          - description
+                          - messages
+                    required:
+                      - data
+                    example:
+                      success: false
+                      data:
+                        object: error
+                        code: 'server:internal_server_error'
+                        description: Something went wrong on the server
+                        messages:
+                          error_key: error_reason
   /utxo.get_challenge_data:
     post:
       tags:
@@ -1234,6 +1370,138 @@ paths:
                         blknum: 123000
                         txindex: 111
                         txhash: '0xbdf562c24ace032176e27621073df58ce1c6f65de3b5932343b70ba03c72132d'
+        '500':
+          description: Returns an internal server error
+          content:
+            application/json:
+              schema:
+                description: The response schema for an error
+                allOf:
+                  - description: The response schema for a successful operation
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      success:
+                        type: boolean
+                      data:
+                        type: object
+                      service_name:
+                        type: string
+                    required:
+                      - service_name
+                      - version
+                      - success
+                      - data
+                    example:
+                      service_name: watcher
+                      version: 1.0.0+abcdefa
+                      success: true
+                      data: {}
+                  - type: object
+                    properties:
+                      data:
+                        description: The object schema for an error
+                        type: object
+                        properties:
+                          object:
+                            type: string
+                          code:
+                            type: string
+                          description:
+                            type: string
+                          messages:
+                            type: object
+                        required:
+                          - object
+                          - code
+                          - description
+                          - messages
+                    required:
+                      - data
+                    example:
+                      success: false
+                      data:
+                        object: error
+                        code: 'server:internal_server_error'
+                        description: Something went wrong on the server
+                        messages:
+                          error_key: error_reason
+  /transaction.batch_submit:
+    post:
+      tags:
+        - Transaction
+      summary: This endpoint submits an array of signed transaction to the child chain.
+      description: |
+        Normally you should call the Watcher's Transaction - Submit instead of this. The Watcher's version performs various security and validation checks (TO DO) before submitting the transaction, so is much safer. However, if the Watcher is not available this version exists.
+      operationId: batch_submit
+      requestBody:
+        description: 'Array of signed transactions, RLP-encoded to bytes, and HEX-encoded to string'
+        required: true
+        content:
+          application/json:
+            schema:
+              title: TransactionBatchSubmitBodySchema
+              type: object
+              properties:
+                transactions:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - transactions
+              example:
+                transactions:
+                  - 0xf8d083015ba98080808080940000...
+                  - 0xf8d083a15ba98080808080920000...
+      responses:
+        '200':
+          description: Transaction batch submission successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - description: The response schema for a successful operation
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                      success:
+                        type: boolean
+                      data:
+                        type: object
+                      service_name:
+                        type: string
+                    required:
+                      - service_name
+                      - version
+                      - success
+                      - data
+                    example:
+                      service_name: watcher
+                      version: 1.0.0+abcdefa
+                      success: true
+                      data: {}
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            blknum:
+                              type: integer
+                              format: int64
+                            txindex:
+                              type: integer
+                              format: int16
+                            txhash:
+                              type: string
+                    example:
+                      data:
+                        - blknum: 123000
+                          txindex: 111
+                          txhash: '0xbdf562c24ace032176e27621073df58ce1c6f65de3b5932343b70ba03c72132d'
         '500':
           description: Returns an internal server error
           content:

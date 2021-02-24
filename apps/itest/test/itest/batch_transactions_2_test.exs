@@ -18,9 +18,9 @@ defmodule BatchTransactions2Tests do
 
   require Logger
 
-  alias ChildChainAPI.Api.Transaction
-  alias ChildChainAPI.Connection, as: ChildChain
-  alias ChildChainAPI.Model.TransactionBatchSubmitBodySchema
+  alias WatcherSecurityCriticalAPI.Api.Transaction
+  alias WatcherSecurityCriticalAPI.Connection, as: Watcher
+  alias WatcherSecurityCriticalAPI.Model.TransactionBatchSubmitBodySchema
   alias ExPlasma.Transaction.Payment
   alias Itest.Account
   alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
