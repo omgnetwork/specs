@@ -83,8 +83,7 @@ defmodule BatchTransactions2Tests do
     # lets wait for the three deposits to be recognized
     geth_block_every_seconds = 1
 
-    {:ok, response} =
-      WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
+    {:ok, response} = WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(Watcher.new())
 
     watcher_security_critical_config =
       WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
@@ -312,7 +311,7 @@ defmodule BatchTransactions2Tests do
   defp send_transactions(transactions_bytes) do
     transactions_bytes = Enum.map(transactions_bytes, &Encoding.to_hex/1)
     batch_transaction_submit_body_schema = %TransactionBatchSubmitBodySchema{transactions: transactions_bytes}
-    {:ok, response} = Transaction.batch_submit(ChildChain.new(), batch_transaction_submit_body_schema)
+    {:ok, response} = Transaction.batch_submit(Watcher.new(), batch_transaction_submit_body_schema)
 
     data =
       response

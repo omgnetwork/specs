@@ -83,8 +83,7 @@ defmodule BatchTransactionsTests do
     # lets wait for the three deposits to be recognized
     geth_block_every_seconds = 1
 
-    {:ok, response} =
-      WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
+    {:ok, response} = WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(Watcher.new())
 
     watcher_security_critical_config =
       WatcherSecurityCriticalConfiguration.to_struct(Jason.decode!(response.body)["data"])
