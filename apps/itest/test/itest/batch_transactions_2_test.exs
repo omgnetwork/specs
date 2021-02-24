@@ -97,7 +97,7 @@ defmodule BatchTransactions2Tests do
     |> Kernel.*(to_miliseconds)
     # for good measure so that we avoid any kind of race conditions
     # blocks are very fast locally (1second)
-    |> Kernel.+(4000)
+    |> Kernel.+(5000)
     |> Kernel.round()
     |> Process.sleep()
 
