@@ -33,7 +33,7 @@ defmodule BatchTransactions2Tests do
   setup do
     {:ok, _} = DebugEvents.start_link()
 
-    [{alice_address, alice_pkey}, {bob_address, bob_pkey}, {eve_address, eve_pkey}] = Account.take_accounts(3)
+    accounts = Account.take_accounts(3)
 
     eth_fee =
       Currency.ether()
@@ -41,42 +41,24 @@ defmodule BatchTransactions2Tests do
       |> Fee.get_for_currency()
       |> Map.get("amount")
 
-    %{
-      "fee" => eth_fee,
-      "Alice" => %{
-        address: alice_address,
-        pkey: "0x" <> alice_pkey,
-        gas: 0,
-        ethereum_balance: 0,
-        ethereum_initial_balance: 0,
-        child_chain_balance: 0,
-        utxos: [],
-        transaction_submit: nil,
-        receipt_hashes: []
-      },
-      "Bob" => %{
-        address: bob_address,
-        pkey: "0x" <> bob_pkey,
-        gas: 0,
-        ethereum_balance: 0,
-        ethereum_initial_balance: 0,
-        child_chain_balance: 0,
-        utxos: [],
-        transaction_submit: nil,
-        receipt_hashes: []
-      },
-      "Eve" => %{
-        address: eve_address,
-        pkey: "0x" <> eve_pkey,
-        gas: 0,
-        ethereum_balance: 0,
-        ethereum_initial_balance: 0,
-        child_chain_balance: 0,
-        utxos: [],
-        transaction_submit: nil,
-        receipt_hashes: []
-      }
-    }
+    ["Alice", "Bob", "Eve"]
+    |> Enum.zip(accounts)
+    |> Enum.reduce(%{}, fn {name, {address, pkey}}, map_acc ->
+      Map.merge(map_acc, %{
+        name => %{
+          address: address,
+          pkey: "0x" <> pkey,
+          gas: 0,
+          ethereum_balance: 0,
+          ethereum_initial_balance: 0,
+          child_chain_balance: 0,
+          utxos: [],
+          transaction_submit: nil,
+          receipt_hashes: []
+        }
+      })
+    end)
+    |> Map.merge(%{"fee" => eth_fee})
   end
 
   defwhen ~r/^they deposit "(?<amount>[^"]+)" ETH to the root chain$/,
@@ -99,7 +81,7 @@ defmodule BatchTransactions2Tests do
       end)
 
     # lets wait for the three deposits to be recognized
-    geth_block_every = 1
+    geth_block_every_seconds = 1
 
     {:ok, response} =
       WatcherSecurityCriticalAPI.Api.Configuration.configuration_get(WatcherSecurityCriticalAPI.Connection.new())
@@ -111,11 +93,11 @@ defmodule BatchTransactions2Tests do
     to_miliseconds = 1000
 
     finality_margin_blocks
-    |> Kernel.*(geth_block_every)
+    |> Kernel.*(geth_block_every_seconds)
     |> Kernel.*(to_miliseconds)
     # for good measure so that we avoid any kind of race conditions
     # blocks are very fast locally (1second)
-    |> Kernel.+(2000)
+    |> Kernel.+(4000)
     |> Kernel.round()
     |> Process.sleep()
 
@@ -286,8 +268,6 @@ defmodule BatchTransactions2Tests do
       end)
 
     old_batch = state["batch"]
-    # lets wait additional time for the deposits to be recognized
-    Process.sleep(2000)
 
     {:ok,
      state
