@@ -268,7 +268,7 @@ defmodule BatchTransactionsTests do
   defp send_transactions(transactions_bytes) do
     transactions_bytes = Enum.map(transactions_bytes, &Encoding.to_hex/1)
     batch_transaction_submit_body_schema = %TransactionBatchSubmitBodySchema{transactions: transactions_bytes}
-    {:ok, response} = Transaction.batch_submit(ChildChain.new(), batch_transaction_submit_body_schema)
+    {:ok, response} = Transaction.batch_submit(Watcher.new(), batch_transaction_submit_body_schema)
 
     data =
       response
