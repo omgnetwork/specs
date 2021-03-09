@@ -17,6 +17,7 @@ defmodule DebugEvents do
   Shortcut to events tracking via WS
   """
 
+  alias Itest.Configuration
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
 
@@ -28,7 +29,7 @@ defmodule DebugEvents do
     Process.flag(:trap_exit, true)
 
     Itest.ContractEvent.start_link(
-      ws_url: "ws://127.0.0.1:8546",
+      ws_url: Configuration.ethereum_ws_url(),
       name: :eth_vault,
       listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
       abi_path:
