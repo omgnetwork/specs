@@ -6,6 +6,8 @@ config :ethereumex,
 
 config :itest,
   child_chain_url: System.get_env("CHILD_CHAIN_URL"),
+  watcher_info_url: System.get_env("WATCHER_INFO_URL", "http://localhost:7534"),
+  watcher_url: System.get_env("WATCHER_URL", "http://localhost:7434"),
   fee_claimer_address: System.get_env("FEE_CLAIMER_ADDRESS"),
   exit_id_size: String.to_integer(System.get_env("EXIT_ID_SIZE") || "160"), # 168 contracts v2
   reorg: System.get_env("REORG"),

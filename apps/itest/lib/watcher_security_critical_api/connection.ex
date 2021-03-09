@@ -23,11 +23,11 @@ if Code.ensure_loaded?(WatcherSecurityCriticalAPI.Connection) do
     @moduledoc """
     Handle Tesla connections for WatcherSecurityCriticalAPI.
     """
-
+    alias Itest.Configuration
     use Tesla
 
     # Add any middleware here (authentication)
-    plug(Tesla.Middleware.BaseUrl, "http://localhost:7434")
+    plug(Tesla.Middleware.BaseUrl, Configuration.watcher_url())
     plug(Tesla.Middleware.Headers, [{"user-agent", "Elixir"}, {"Content-Type", "application/json"}])
     plug(Tesla.Middleware.EncodeJson, engine: Poison)
 
