@@ -5,6 +5,8 @@ config :ethereumex,
   http_options: [timeout: 60_000, recv_timeout: 60_000]
 
 config :itest,
+  ethereum_rpc_url: System.get_env("ETHEREUM_RPC_URL", "http://localhost:8545"),
+  ethereum_ws_url: System.get_env("ETHEREUM_WS_URL", "ws://127.0.0.1:8546"),
   child_chain_url: System.get_env("CHILD_CHAIN_URL"),
   watcher_info_url: System.get_env("WATCHER_INFO_URL", "http://localhost:7534"),
   watcher_url: System.get_env("WATCHER_URL", "http://localhost:7434"),

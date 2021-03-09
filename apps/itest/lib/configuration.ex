@@ -15,6 +15,10 @@
 defmodule Itest.Configuration do
   @moduledoc false
 
+  def ethereum_ws_url() do
+    Application.get_env(:itest, :ethereum_ws_url)
+  end
+
   def child_chain_url() do
     Application.get_env(:itest, :child_chain_url)
   end
