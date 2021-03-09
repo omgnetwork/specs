@@ -19,6 +19,14 @@ defmodule Itest.Configuration do
     Application.get_env(:itest, :child_chain_url)
   end
 
+  def watcher_info_url() do
+    Application.get_env(:itest, :watcher_info_url)
+  end
+
+  def watcher_url() do
+    Application.get_env(:itest, :watcher_url)
+  end
+
   def fee_claimer_address() do
     Application.get_env(:itest, :fee_claimer_address)
   end
