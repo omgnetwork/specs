@@ -17,6 +17,7 @@ defmodule DebugEvents do
   Shortcut to events tracking via WS
   """
 
+  alias Itest.Configuration
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
 
