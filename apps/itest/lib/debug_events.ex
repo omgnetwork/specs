@@ -27,7 +27,7 @@ defmodule DebugEvents do
     exit_game_contract_address = Itest.PlasmaFramework.exit_game_contract_address(ExPlasma.payment_v1())
 
     Itest.ContractEvent.start_link(
-      ws_url: "ws://127.0.0.1:8546",
+      ws_url: Configuration.ethereum_ws_url(),
       name: :eth_vault,
       listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
       abi_path:
