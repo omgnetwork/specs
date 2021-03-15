@@ -15,6 +15,26 @@
 defmodule Itest.Configuration do
   @moduledoc false
 
+  def ethereum_ws_url() do
+    Application.get_env(:itest, :ethereum_ws_url)
+  end
+
+  def child_chain_url() do
+    Application.get_env(:itest, :child_chain_url)
+  end
+
+  def watcher_info_url() do
+    Application.get_env(:itest, :watcher_info_url)
+  end
+
+  def watcher_url() do
+    Application.get_env(:itest, :watcher_url)
+  end
+
+  def fee_claimer_address() do
+    Application.get_env(:itest, :fee_claimer_address)
+  end
+
   def exit_id_size() do
     Application.get_env(:itest, :exit_id_size)
   end
