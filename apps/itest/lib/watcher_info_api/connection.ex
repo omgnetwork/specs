@@ -19,7 +19,6 @@ if Code.ensure_loaded?(WatcherInfoAPI.Connection) do
     @moduledoc """
     Handle Tesla connections for WatcherInfoAPI.
     """
-
     alias Itest.Configuration
     use Tesla
 
