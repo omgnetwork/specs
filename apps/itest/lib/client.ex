@@ -51,7 +51,7 @@ defmodule Itest.Client do
     }
 
     {:ok, receipt_hash} = Ethereumex.HttpClient.eth_send_transaction(txmap)
-
+    Logger.debug("Made deposit, waiting for confirmation")
     wait_on_receipt_confirmed(receipt_hash)
     {:ok, receipt_hash}
   end
@@ -161,6 +161,7 @@ defmodule Itest.Client do
 
   def wait_until_block_number(block_number) do
     {:ok, current_block_number} = get_latest_block_number()
+    Logger.debug("Current block number #{current_block_number} looking for #{block_number}")
 
     if current_block_number >= block_number do
       :ok

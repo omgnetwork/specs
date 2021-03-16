@@ -32,8 +32,6 @@ ethereum_rpc_url = fn ->
   end
 end
 
-IO.inspect(ethereum_rpc_url.(), label: "WHERE TO? ethereum_rpc_url.()")
-
 {:ok, result} =
   Ethereumex.HttpClient.eth_call(
     %{
