@@ -18,9 +18,6 @@ defmodule BatchTransactionsTests do
 
   require Logger
 
-  alias WatcherSecurityCriticalAPI.Api.Transaction
-  alias WatcherSecurityCriticalAPI.Connection, as: Watcher
-  alias WatcherSecurityCriticalAPI.Model.TransactionBatchSubmitBodySchema
   alias ExPlasma.Transaction.Payment
   alias Itest.Account
   alias Itest.ApiModel.WatcherSecurityCriticalConfiguration
@@ -29,6 +26,9 @@ defmodule BatchTransactionsTests do
   alias Itest.Poller
   alias Itest.Transactions.Currency
   alias Itest.Transactions.Encoding
+  alias WatcherSecurityCriticalAPI.Api.Transaction
+  alias WatcherSecurityCriticalAPI.Connection, as: Watcher
+  alias WatcherSecurityCriticalAPI.Model.TransactionBatchSubmitBodySchema
 
   setup do
     {:ok, _} = DebugEvents.start_link()

@@ -84,6 +84,12 @@ defmodule Itest.Poller do
     do: wait_on_receipt_status(receipt_hash, "0x1", @retry_count)
 
   @doc """
+  Ethereum:: Waits on the receipt status as 'confirmed'
+  """
+  def wait_on_receipt_confirmed(receipt_hash, opts),
+    do: wait_on_receipt_status(receipt_hash, opts, "0x1", @retry_count)
+
+  @doc """
   API:: Pull until the utxo is not found for the address.
   """
   def utxo_absent?(address, utxo_pos), do: utxo_absent?(address, utxo_pos, @retry_count)
@@ -155,6 +161,9 @@ defmodule Itest.Poller do
 
   defp get_transaction_receipt(receipt_hash),
     do: Ethereumex.HttpClient.eth_get_transaction_receipt(receipt_hash)
+
+  defp get_transaction_receipt(receipt_hash, opts),
+    do: Ethereumex.HttpClient.eth_get_transaction_receipt(receipt_hash, opts)
 
   defp pull_balance_until_amount(address, amount, currency, 0) do
     {:ok, response} = account_get_balances(address)

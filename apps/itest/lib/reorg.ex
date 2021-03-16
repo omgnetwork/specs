@@ -163,7 +163,7 @@ defmodule Itest.Reorg do
 
     pause_response = post_request!(pause_container_url)
 
-    Logger.info("Chain reorg: pause response - #{inspect(pause_response)}")
+    Logger.info("Chain reorg: pause response #{pause_container_url} - #{inspect(pause_response)}")
 
     # the pause operation is not instant, let's wait for 2s
     Process.sleep(2_000)
@@ -179,7 +179,7 @@ defmodule Itest.Reorg do
     # the unpause operation is not instant, let's wait for 2s
     Process.sleep(2_000)
 
-    Logger.info("Chain reorg: unpause response - #{inspect(unpause_response)}")
+    Logger.info("Chain reorg: unpause response #{unpause_container_url} - #{inspect(unpause_response)}")
   end
 
   defp with_retries(func, total_time \\ 510, current_time \\ 0) do
