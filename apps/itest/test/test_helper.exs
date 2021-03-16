@@ -39,6 +39,7 @@ end
       to: Itest.PlasmaFramework.address(),
       data: Encoding.to_hex(data)
     },
+    "latest",
     url: ethereum_rpc_url.()
   )
 
@@ -94,7 +95,7 @@ has_exit_queue = fn currency ->
     )
 
   {:ok, receipt_enc} =
-    Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)},
+    Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)}, "latest",
       url: ethereum_rpc_url.()
     )
 
