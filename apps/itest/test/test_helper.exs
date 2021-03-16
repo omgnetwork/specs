@@ -23,7 +23,7 @@ Application.ensure_all_started(:ethereumex)
 data = ABI.encode("minExitPeriod()", [])
 
 ethereum_rpc_url = fn ->
-  case Application.get_env(:itest, :reorg) do
+  case System.get_env("REORG") do
     nil ->
       System.get_env("ETHEREUM_RPC_URL", "http://localhost:8545")
 
@@ -31,6 +31,8 @@ ethereum_rpc_url = fn ->
       System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9000")
   end
 end
+
+IO.inspect(ethereum_rpc_url.(), label: "WHERE TO? ethereum_rpc_url.()")
 
 {:ok, result} =
   Ethereumex.HttpClient.eth_call(
