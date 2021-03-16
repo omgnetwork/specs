@@ -22,12 +22,25 @@ import Itest.Poller, only: [wait_on_receipt_confirmed: 1]
 Application.ensure_all_started(:ethereumex)
 data = ABI.encode("minExitPeriod()", [])
 
+ethereum_rpc_url = fn ->
+  case Application.get_env(:itest, :reorg) do
+    nil ->
+      System.get_env("ETHEREUM_RPC_URL", "http://localhost:8545")
+
+    _ ->
+      System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9000")
+  end
+end
+
 {:ok, result} =
-  Ethereumex.HttpClient.eth_call(%{
-    from: Itest.PlasmaFramework.address(),
-    to: Itest.PlasmaFramework.address(),
-    data: Encoding.to_hex(data)
-  })
+  Ethereumex.HttpClient.eth_call(
+    %{
+      from: Itest.PlasmaFramework.address(),
+      to: Itest.PlasmaFramework.address(),
+      data: Encoding.to_hex(data)
+    },
+    url: ethereum_rpc_url.()
+  )
 
 milliseconds =
   result
@@ -71,7 +84,7 @@ Application.put_env(:ex_plasma, :eip_712_domain,
 
 ### add exit queues
 gas_add_exit_queue = 800_000
-{:ok, [faucet | _]} = Ethereumex.HttpClient.eth_accounts()
+{:ok, [faucet | _]} = Ethereumex.HttpClient.eth_accounts(url: ethereum_rpc_url.())
 
 has_exit_queue = fn currency ->
   data =
@@ -81,7 +94,9 @@ has_exit_queue = fn currency ->
     )
 
   {:ok, receipt_enc} =
-    Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)})
+    Ethereumex.HttpClient.eth_call(%{to: Itest.PlasmaFramework.address(), data: Encoding.to_hex(data)},
+      url: ethereum_rpc_url.()
+    )
 
   receipt_enc
   |> Encoding.to_binary()
@@ -110,7 +125,7 @@ add_exit_queue = fn symbol, currency ->
       gas: Encoding.to_hex(gas_add_exit_queue)
     }
 
-    {:ok, receipt_hash} = Ethereumex.HttpClient.eth_send_transaction(txmap)
+    {:ok, receipt_hash} = Ethereumex.HttpClient.eth_send_transaction(txmap, url: ethereum_rpc_url.())
     wait_on_receipt_confirmed(receipt_hash)
     receipt_hash
   end
