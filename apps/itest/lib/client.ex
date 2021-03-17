@@ -178,7 +178,8 @@ defmodule Itest.Client do
         {return, ""} = Integer.parse(number_hex, 16)
         {:ok, return}
 
-      _other ->
+      other ->
+        Logger.info("get_latest_block_number #{inspect(other)}")
         Process.sleep(1_000)
         get_latest_block_number()
     end
