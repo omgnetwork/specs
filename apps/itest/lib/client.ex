@@ -161,7 +161,7 @@ defmodule Itest.Client do
 
   def wait_until_block_number(block_number) do
     {:ok, current_block_number} = get_latest_block_number()
-    Logger.debug("Current block number #{current_block_number} looking for #{block_number}")
+    Logger.info("Current block number #{current_block_number} looking for #{block_number}")
 
     if current_block_number >= block_number do
       :ok
