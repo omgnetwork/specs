@@ -27,14 +27,16 @@ defmodule Itest.Reorg do
   def execute_in_reorg(func) do
     if Application.get_env(:itest, :reorg) do
       wait_for_nodes_to_be_in_sync(2)
-
+      Logger.info("wait_for_nodes_to_be_in_sync done")
       {:ok, block_before_reorg} = Client.get_latest_block_number()
 
+      Logger.info("get_latest_block_number done #{block_before_reorg}")
       pause_container!(@node1)
       unpause_container!(@node2)
 
       :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
+      Logger.info("wait_until_block_number done #{block_before_reorg + 4}")
       func.()
 
       {:ok, block_on_the_first_node1} = Client.get_latest_block_number()
