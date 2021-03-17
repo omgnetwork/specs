@@ -33,45 +33,32 @@ defmodule Itest.Reorg do
       Logger.info("get_latest_block_number done #{block_before_reorg}")
       pause_container!(@node1)
       unpause_container!(@node2)
-
-      :ok =
-        Client.wait_until_block_number(
-          block_before_reorg + 4,
-          System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001")
-        )
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001"))
+      :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
       Logger.info("wait_until_block_number done #{block_before_reorg + 4}")
       func.()
 
       {:ok, block_on_the_first_node1} = Client.get_latest_block_number()
 
-      :ok =
-        Client.wait_until_block_number(
-          block_on_the_first_node1 + 2,
-          System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001")
-        )
+      :ok = Client.wait_until_block_number(block_on_the_first_node1 + 2)
 
       {:ok, block_on_the_first_node2} = Client.get_latest_block_number()
 
       pause_container!(@node2)
       unpause_container!(@node1)
 
-      :ok =
-        Client.wait_until_block_number(
-          block_before_reorg + 4,
-          System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001")
-        )
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001"))
+
+      :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
       response = func.()
 
-      :ok =
-        Client.wait_until_block_number(
-          block_on_the_first_node2 + 4,
-          System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001")
-        )
+      :ok = Client.wait_until_block_number(block_on_the_first_node2 + 4)
 
       unpause_container!(@node2)
       unpause_container!(@node1)
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001"))
 
       wait_for_nodes_to_be_in_sync()
 

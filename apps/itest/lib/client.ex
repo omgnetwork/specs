@@ -185,32 +185,6 @@ defmodule Itest.Client do
     end
   end
 
-  def wait_until_block_number(block_number, url) do
-    {:ok, current_block_number} = get_latest_block_number(url)
-    Logger.info("Current block number #{current_block_number} looking for #{block_number}")
-
-    if current_block_number >= block_number do
-      :ok
-    else
-      Process.sleep(1_000)
-
-      wait_until_block_number(block_number, url)
-    end
-  end
-
-  def get_latest_block_number(url) do
-    case Ethereumex.HttpClient.eth_get_block_by_number("latest", false, url: url) do
-      {:ok, %{"number" => "0x" <> number_hex}} ->
-        {return, ""} = Integer.parse(number_hex, 16)
-        {:ok, return}
-
-      other ->
-        Logger.info("get_latest_block_number #{url} #{inspect(other)}")
-        Process.sleep(1_000)
-        get_latest_block_number(url)
-    end
-  end
-
   defp get_account_balance(address) do
     {:ok, response} =
       WatcherInfoAPI.Api.Account.account_get_balance(
