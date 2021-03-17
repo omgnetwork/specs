@@ -34,25 +34,41 @@ defmodule Itest.Reorg do
       pause_container!(@node1)
       unpause_container!(@node2)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 4)
+      :ok =
+        Client.wait_until_block_number(
+          block_before_reorg + 4,
+          System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001")
+        )
 
       Logger.info("wait_until_block_number done #{block_before_reorg + 4}")
       func.()
 
       {:ok, block_on_the_first_node1} = Client.get_latest_block_number()
 
-      :ok = Client.wait_until_block_number(block_on_the_first_node1 + 2)
+      :ok =
+        Client.wait_until_block_number(
+          block_on_the_first_node1 + 2,
+          System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001")
+        )
 
       {:ok, block_on_the_first_node2} = Client.get_latest_block_number()
 
       pause_container!(@node2)
       unpause_container!(@node1)
 
-      :ok = Client.wait_until_block_number(block_before_reorg + 4)
+      :ok =
+        Client.wait_until_block_number(
+          block_before_reorg + 4,
+          System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001")
+        )
 
       response = func.()
 
-      :ok = Client.wait_until_block_number(block_on_the_first_node2 + 4)
+      :ok =
+        Client.wait_until_block_number(
+          block_on_the_first_node2 + 4,
+          System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001")
+        )
 
       unpause_container!(@node2)
       unpause_container!(@node1)
