@@ -27,15 +27,38 @@ defmodule DebugEvents do
     vault_erc20_address = Currency.erc20() |> Itest.PlasmaFramework.vault() |> Encoding.to_hex()
     exit_game_contract_address = Itest.PlasmaFramework.exit_game_contract_address(ExPlasma.payment_v1())
     Process.flag(:trap_exit, true)
+    case Application.get_env(:itest, :reorg) do
+      nil ->
+        Itest.ContractEvent.start_link(
+          ws_url: Configuration.ethereum_ws_url(),
+          name: :eth_vault,
+          listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
+          abi_path:
+            System.get_env("PLASMA_CONTRACTS_DIR") ||
+              Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
+          subscribe: self()
+        )
 
-    Itest.ContractEvent.start_link(
-      ws_url: Configuration.ethereum_ws_url(),
-      name: :eth_vault,
-      listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
-      abi_path:
-        System.get_env("PLASMA_CONTRACTS_DIR") ||
-          Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
-      subscribe: self()
-    )
+      _ ->
+        Itest.ContractEvent.start_link(
+          ws_url: System.get_env("ETHEREUM_WS_URL_1", "ws://localhost:9000"),
+          name: :reorg_node_1,
+          listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
+          abi_path:
+            System.get_env("PLASMA_CONTRACTS_DIR") ||
+              Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
+          subscribe: self()
+        )
+
+        Itest.ContractEvent.start_link(
+          ws_url: System.get_env("ETHEREUM_WS_URL_2", "ws://localhost:9000"),
+          name: :reorg_node_2,
+          listen_to: [plasma_framework, vault_ether_address, vault_erc20_address, exit_game_contract_address],
+          abi_path:
+            System.get_env("PLASMA_CONTRACTS_DIR") ||
+              Path.join([File.cwd!(), "../../../../data/plasma-contracts/contracts/"]),
+          subscribe: self()
+        )
+    end
   end
 end

@@ -24,19 +24,19 @@ defmodule Itest.Reorg do
   @node1 "geth-1"
   @node2 "geth-2"
 
-  @rpc_nodes ["http://localhost:9000", "http://localhost:9001"]
-
   def execute_in_reorg(func) do
     if Application.get_env(:itest, :reorg) do
       wait_for_nodes_to_be_in_sync(2)
-
+      Logger.info("wait_for_nodes_to_be_in_sync done")
       {:ok, block_before_reorg} = Client.get_latest_block_number()
 
+      Logger.info("get_latest_block_number done #{block_before_reorg}")
       pause_container!(@node1)
       unpause_container!(@node2)
-
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001"))
       :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
+      Logger.info("wait_until_block_number done #{block_before_reorg + 4}")
       func.()
 
       {:ok, block_on_the_first_node1} = Client.get_latest_block_number()
@@ -48,6 +48,8 @@ defmodule Itest.Reorg do
       pause_container!(@node2)
       unpause_container!(@node1)
 
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001"))
+
       :ok = Client.wait_until_block_number(block_before_reorg + 4)
 
       response = func.()
@@ -56,6 +58,7 @@ defmodule Itest.Reorg do
 
       unpause_container!(@node2)
       unpause_container!(@node1)
+      Application.put_env(:ethereumex, :url, System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9001"))
 
       wait_for_nodes_to_be_in_sync()
 
@@ -67,7 +70,7 @@ defmodule Itest.Reorg do
 
   def create_account_from_secret(secret, passphrase) do
     result =
-      Enum.map(@rpc_nodes, fn rpc_node ->
+      Enum.map(get_nodes(), fn rpc_node ->
         with_retries(fn ->
           Ethereumex.HttpClient.request("personal_importRawKey", [secret, passphrase], url: rpc_node)
         end)
@@ -77,7 +80,7 @@ defmodule Itest.Reorg do
   end
 
   def unlock_account(addr, passphrase) do
-    Enum.each(@rpc_nodes, fn rpc_node ->
+    Enum.each(get_nodes(), fn rpc_node ->
       {:ok, true} =
         with_retries(fn ->
           Ethereumex.HttpClient.request("personal_unlockAccount", [addr, passphrase, 0], url: rpc_node)
@@ -88,18 +91,18 @@ defmodule Itest.Reorg do
   def wait_until_peer_count(peer_count) do
     _ = Logger.info("Waiting for peer count to equal to #{peer_count}")
 
-    Enum.each(@rpc_nodes, fn node -> do_wait_until_peer_count(node, peer_count) end)
+    Enum.each(get_nodes(), fn node -> do_wait_until_peer_count(node, peer_count) end)
   end
 
   defp wait_for_nodes_to_be_in_sync(blocks \\ 10) do
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+    wait_until_peer_count(1) && Enum.each(get_nodes(), fn rpc_node -> wait_until_synced(rpc_node) end) &&
       wait_until_latest_block_hash_equal?()
 
     {:ok, current_block} = Client.get_latest_block_number()
 
     :ok = Client.wait_until_block_number(current_block + blocks)
 
-    wait_until_peer_count(1) && Enum.each(@rpc_nodes, fn rpc_node -> wait_until_synced(rpc_node) end) &&
+    wait_until_peer_count(1) && Enum.each(get_nodes(), fn rpc_node -> wait_until_synced(rpc_node) end) &&
       wait_until_latest_block_hash_equal?()
   end
 
@@ -115,7 +118,7 @@ defmodule Itest.Reorg do
   end
 
   defp wait_until_latest_block_hash_equal?() do
-    [node1, node2] = @rpc_nodes
+    [node1, node2] = get_nodes()
 
     node1_block = get_latest_block(node1)
     node1_block_number = node1_block["number"]
@@ -165,7 +168,7 @@ defmodule Itest.Reorg do
 
     pause_response = post_request!(pause_container_url)
 
-    Logger.info("Chain reorg: pause response - #{inspect(pause_response)}")
+    Logger.info("Chain reorg: pause response #{pause_container_url} - #{inspect(pause_response)}")
 
     # the pause operation is not instant, let's wait for 2s
     Process.sleep(2_000)
@@ -181,7 +184,7 @@ defmodule Itest.Reorg do
     # the unpause operation is not instant, let's wait for 2s
     Process.sleep(2_000)
 
-    Logger.info("Chain reorg: unpause response - #{inspect(unpause_response)}")
+    Logger.info("Chain reorg: unpause response #{unpause_container_url} - #{inspect(unpause_response)}")
   end
 
   defp with_retries(func, total_time \\ 510, current_time \\ 0) do
@@ -204,5 +207,12 @@ defmodule Itest.Reorg do
       timeout: 60_000,
       recv_timeout: 60_000
     )
+  end
+
+  defp get_nodes() do
+    [
+      System.get_env("ETHEREUM_RPC_URL_1", "http://localhost:9000"),
+      System.get_env("ETHEREUM_RPC_URL_2", "http://localhost:9001")
+    ]
   end
 end
