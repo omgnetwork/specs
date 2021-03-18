@@ -88,7 +88,7 @@ defmodule Itest.Reorg do
     end)
   end
 
-  def wait_until_peer_count(peer_count) do
+  defp wait_until_peer_count(peer_count) do
     _ = Logger.info("Waiting for peer count to equal to #{peer_count}")
 
     Enum.each(get_nodes(), fn node -> do_wait_until_peer_count(node, peer_count) end)
@@ -111,7 +111,8 @@ defmodule Itest.Reorg do
       {:ok, false} ->
         :ok
 
-      _other ->
+      other ->
+        Logger.info("eth_syncing for #{node} is #{inspect(other)}")
         Process.sleep(1_000)
         wait_until_synced(node)
     end
@@ -139,7 +140,8 @@ defmodule Itest.Reorg do
       {:ok, result} ->
         result
 
-      _other ->
+      other ->
+        Logger.info("eth_get_block_by_number for #{node} is #{inspect(other)}")
         Process.sleep(1_000)
         get_latest_block(node)
     end
@@ -157,7 +159,8 @@ defmodule Itest.Reorg do
           do_wait_until_peer_count(node, peer_count)
         end
 
-      _other ->
+      other ->
+        Logger.info("net_peerCount for #{node} is #{inspect(other)}")
         Process.sleep(1_000)
         do_wait_until_peer_count(node, peer_count)
     end
