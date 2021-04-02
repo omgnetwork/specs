@@ -23,8 +23,8 @@ defmodule Itest.MixProject do
 
   defp deps() do
     [
-      # ex plasma based on 0.2.0 but with rust deps
-      {:ex_plasma, "~> 0.3.0"},
+      # {:ex_plasma, "~> 0.3.0"},
+      {:ex_plasma, git: "https://github.com/omgnetwork/ex_plasma", branch: "inomurko/v0.4.0"},
       {:watcher_info_api, in_umbrella: true},
       {:watcher_security_critical_api, in_umbrella: true},
       {:child_chain_api, in_umbrella: true},
