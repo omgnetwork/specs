@@ -37,7 +37,7 @@ defmodule Itest.MixProject do
       {:ex_secp256k1, "~> 0.1.2"},
       {:poison, "~> 3.0"},
       {:tesla, "~> 1.3"},
-      {:hackney, "~> 1.15.2"},
+      {:hackney, "~> 1.17.0"},
       {:cabbage, "~> 0.3.0"}
     ]
   end

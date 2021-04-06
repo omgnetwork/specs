@@ -32,7 +32,7 @@ defmodule Itest.Configuration do
   end
 
   def fee_claimer_address() do
-    Application.fetch!(:itest, :fee_claimer_address)
+    Application.fetch_env!(:itest, :fee_claimer_address)
   end
 
   def exit_id_size() do
