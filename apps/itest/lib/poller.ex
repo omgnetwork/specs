@@ -168,10 +168,6 @@ defmodule Itest.Poller do
         {:ok, response} ->
           decoded_response = Jason.decode!(response.body)
           Enum.find(decoded_response["data"], fn data -> data["currency"] == currency end)
-
-        _ ->
-          # socket closed etc.
-          :error
       end
 
     case response do
