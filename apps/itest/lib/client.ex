@@ -33,7 +33,7 @@ defmodule Itest.Client do
 
   require Logger
 
-  @gas 180_000
+  @gas 380_000
   @default_retry_attempts 15
   @poll_interval 2000
   @default_paging %{page: 1, limit: 200}
@@ -72,6 +72,7 @@ defmodule Itest.Client do
     {:ok, response} = Transaction.create_transaction(WatcherInfo.new(), transaction)
 
     result = Jason.decode!(response.body)["data"]
+    IO.inspect(response, label: "create_transaction")
     process_transaction_result(result, amount_in_wei, input_address, output_address, currency, tries)
   end
 
